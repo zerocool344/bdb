@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<!--
+  KiteWeather — Weather Trends Dashboard
+  Copyright (c) 2026 BDP. All Rights Reserved. — see LICENSE.
+  Proprietary: no permission is granted to reuse, copy, or redistribute this code.
+
+  Single standalone file: no build step, no API keys, no dependencies beyond the
+  Chart.js CDN. Weather data from Open-Meteo (CC-BY-4.0), ZIP lookup from Zippopotam.us.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.zippopotam.us; img-src 'self' data:; base-uri 'self'; form-action 'none'">
+<title>KiteWeather — Weather Trends</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFB347' stroke-linecap='round' stroke-linejoin='round'><defs><clipPath id='k'><rect x='0' y='0' width='24' height='9.3'/></clipPath></defs><g clip-path='url(%23k)' opacity='.55' stroke-width='2'><path d='M12 1.6 L17.6 8.2 L12 15.4 L6.4 8.2 Z'/><path d='M6.4 8.2 H17.6'/></g><path d='M3 10.2 q3 -2.4 6 0 t6 0 t6 0' stroke-width='2.6'/><path d='M3 15.2 q3 -2.4 6 0 t6 0 t6 0' stroke-width='2.6'/><path d='M3 20.2 q3 -2.4 6 0 t6 0 t6 0' stroke-width='2.6'/></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#10161D; --panel:#18222E; --panel-2:#1E2A38; --line:#2B3A4B;
+    --text:#E8EDF2; --muted:#8FA1B3;
+    --temp:#FFB347; --feels:#FF6B5E; --hum:#4FC3F7; --rain:#5B8DEF; --wind:#9CCB86;
+    --radius:10px;
+    /* System UI stack — San Francisco on Apple, Segoe UI Variable on Win 11,
+       Inter/Roboto elsewhere. No webfont request, so it renders instantly and
+       works offline or behind a filter that blocks font CDNs. */
+    --font:-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+           Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#F2F5F8; --panel:#FFFFFF; --panel-2:#E8EEF4; --line:#D3DCE4;
+    --text:#1C2733; --muted:#5C6C7C;
+    --temp:#D98A00; --feels:#E0483B; --hum:#0E86C7; --rain:#3565D6; --wind:#4E8F3F;
+  }
+  :root[data-theme="light"] .locbar button{border-color:#B9C6D2;}
+  :root[data-theme="light"] .locbar button:hover{background:#DDE6EE;}
+  :root[data-theme="light"] .tabs button.active{border-color:#B9C6D2;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    transition:background .2s, color .2s;
+    font-family:var(--font);
+    font-size:14px; line-height:1.45; padding:16px;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  header{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; margin-bottom:12px;}
+  header .brand{display:flex; align-items:center; gap:9px;}
+  header .mark{width:22px; height:22px; flex:none; color:var(--temp);}
+  header h1{font-size:23px; font-weight:700; letter-spacing:-.021em;}
+  header .loc{color:var(--muted); font-size:13px;}
+  header .stamp{margin-left:auto; color:var(--muted); font-size:12px;}
+
+  /* ---------- Location bar ---------- */
+  .locbar{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .locbar input{
+    flex:1; min-width:180px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:10px 14px; color:var(--text); font-size:15px; font-family:inherit;
+  }
+  .locbar input::placeholder{color:var(--muted);}
+  .locbar input:focus{outline:2px solid var(--hum); outline-offset:-1px;}
+  .locbar button{
+    background:var(--panel-2); color:var(--text); border:1px solid #3E5268;
+    border-radius:8px; padding:10px 18px; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  .locbar button:hover{background:#26364A;}
+  .locbar button:focus-visible{outline:2px solid var(--hum); outline-offset:2px;}
+  .status{font-size:12px; color:var(--muted); margin:-6px 0 12px; min-height:16px;}
+  .status.err{color:var(--feels);}
+
+  /* ---------- Current conditions ---------- */
+  .now{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin-bottom:12px;}
+  .now .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:8px 12px;}
+  .now .label{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); line-height:1.3; margin-bottom:2px;}
+  .now .value{font-size:21px; font-weight:650; letter-spacing:-.022em; line-height:1.25; font-variant-numeric:tabular-nums;}
+  .now .sub{font-size:11.5px; color:var(--muted); line-height:1.3; margin-top:2px;}
+  .delta-hot{color:var(--feels); font-weight:600;}
+  .delta-cold{color:var(--hum); font-weight:600;}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .tabs button{
+    background:var(--panel); color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .tabs button:hover{color:var(--text);}
+  .tabs button.active{background:var(--panel-2); color:var(--text); border-color:#3E5268;}
+  .tabs button:focus-visible{outline:2px solid var(--hum); outline-offset:2px;}
+
+  /* ---------- Panels & charts ---------- */
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:14px;}
+  .panel h2{font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:10px;}
+  .chart-box{position:relative; height:clamp(210px, 30vh, 330px);}
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  .grid .panel{margin-bottom:0;}
+  /* Grid items default to min-width:auto, which stops the chart canvas from
+     shrinking when the window narrows — pin to 0 so it can reflow down. */
+  .grid > .panel{min-width:0;}
+  .chart-box{min-width:0;}
+  .grid .chart-box{height:clamp(160px, 22vh, 210px);}
+  .note{font-size:12px; color:var(--muted); margin-top:12px;}
+
+  @media (max-width:640px){
+    body{padding:10px;}
+    .grid{grid-template-columns:1fr;}
+    .chart-box{height:250px;}
+    .grid .chart-box{height:190px;}
+    header .stamp{margin-left:0; width:100%;}
+    .now .value{font-size:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="KiteWeather logo">
+        <defs><clipPath id="kiteTop"><rect x="0" y="0" width="24" height="9.3"/></clipPath></defs>
+        <g clip-path="url(#kiteTop)" opacity=".55" stroke-width="1.7">
+          <path d="M12 1.6 L17.6 8.2 L12 15.4 L6.4 8.2 Z"/>
+          <path d="M6.4 8.2 H17.6"/>
+        </g>
+        <path d="M3 10.2 q3 -2.4 6 0 t6 0 t6 0" stroke-width="2.1"/>
+        <path d="M3 15.2 q3 -2.4 6 0 t6 0 t6 0" stroke-width="2.1"/>
+        <path d="M3 20.2 q3 -2.4 6 0 t6 0 t6 0" stroke-width="2.1"/>
+      </svg>
+      <h1>KiteWeather</h1>
+    </div>
+    <span class="loc" id="locLabel">—</span>
+    <span class="stamp" id="stamp"></span>
+  </header>
+
+  <!-- Location search -->
+  <div class="locbar">
+    <input id="locInput" type="text" inputmode="search" placeholder="Enter US ZIP (e.g. 10001) or city (e.g. Tokyo)"
+           aria-label="Location search">
+    <button id="goBtn">Update</button>
+    <button id="gpsBtn" title="Use device location">📍 My location</button>
+    <button id="diagBtn" title="Test connectivity to each data service">🔧 Test connection</button>
+    <button id="themeBtn" title="Toggle light/dark theme">☀️ Light</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <!-- Current conditions strip -->
+  <div class="now" id="nowStrip"></div>
+
+  <!-- View tabs -->
+  <div class="tabs" role="tablist">
+    <button class="active" data-view="hourly" role="tab">Hourly · 48 h</button>
+    <button data-view="daily" role="tab">Daily · 7 days</button>
+    <button data-view="weekly" role="tab">Weekly · 16-day trend</button>
+  </div>
+
+  <!-- Consolidated chart -->
+  <div class="panel">
+    <h2 id="consolidatedTitle">Consolidated — all essentials</h2>
+    <div class="chart-box"><canvas id="consolidated"></canvas></div>
+  </div>
+
+  <!-- Separate charts -->
+  <div class="grid">
+    <div class="panel"><h2>Temperature — actual vs feels like</h2>
+      <div class="chart-box"><canvas id="tempChart"></canvas></div></div>
+    <div class="panel"><h2>Humidity</h2>
+      <div class="chart-box"><canvas id="humChart"></canvas></div></div>
+    <div class="panel"><h2>Rain chance</h2>
+      <div class="chart-box"><canvas id="rainChart"></canvas></div></div>
+    <div class="panel"><h2>Wind &amp; gusts</h2>
+      <div class="chart-box"><canvas id="windChart"></canvas></div></div>
+  </div>
+
+  <p class="note">
+    Live data: Open-Meteo forecast API (free, no key) · ZIP lookup: Zippopotam.us · City lookup: Open-Meteo geocoding.
+    Data refreshes automatically every 30 minutes while the page is open. Default location: London, UK —
+    change the DEFAULT constant near the top of the script to alter it.
+  </p>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+const DEFAULT = {name:'London, United Kingdom', lat:51.5074, lon:-0.1278, us:false};
+const REFRESH_MINUTES = 30;
+
+let LOC = {...DEFAULT};
+let DATA = null;
+
+/* =====================================================================
+   GEOCODING — ZIP via Zippopotam.us, city via Open-Meteo geocoding
+   ===================================================================== */
+async function resolveLocation(q){
+  q = q.trim();
+  if(!q) throw new Error('Enter a ZIP code or city name.');
+
+  // 5-digit US ZIP
+  if(/^\d{5}$/.test(q)){
+    const res = await fetch('https://api.zippopotam.us/us/' + q);
+    if(!res.ok) throw new Error('ZIP ' + q + ' not found.');
+    const j = await res.json();
+    const p = j.places[0];
+    return {name: p['place name'] + ', ' + p['state'] + ' (' + q + ')',
+            lat: parseFloat(p.latitude), lon: parseFloat(p.longitude), us:true};
+  }
+
+  // City / place name (worldwide)
+  const res = await fetch('https://geocoding-api.open-meteo.com/v1/search?name='
+              + encodeURIComponent(q) + '&count=1&language=en&format=json');
+  const j = await res.json();
+  if(!j.results || !j.results.length) throw new Error('No match found for "' + q + '".');
+  const r = j.results[0];
+  const region = [r.admin1, r.country_code].filter(Boolean).join(', ');
+  return {name: r.name + (region ? ', ' + region : ''), lat: r.latitude, lon: r.longitude,
+          us: r.country_code === 'US'};
+}
+
+/* =====================================================================
+   LIVE DATA — Open-Meteo (units adapt: °F/mph in the US, °C/km/h elsewhere)
+   ===================================================================== */
+/* Prefer the country flag set during lookup (ZIP = US, city = API country_code).
+   Only geolocation lacks it, so fall back to a rough continental-US bounding box. */
+function isUS(){
+  if(typeof LOC.us === 'boolean') return LOC.us;
+  return LOC.lon < -50 && LOC.lat > 24 && LOC.lat < 50;
+}
+
+async function fetchLive(){
+  const imperial = isUS();
+  const tUnit = imperial ? 'fahrenheit' : 'celsius';
+  const wUnit = imperial ? 'mph' : 'kmh';
+  UNITS.t = imperial ? '°F' : '°C';
+  UNITS.w = imperial ? 'mph' : 'km/h';
+
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LOC.lat + '&longitude=' + LOC.lon
+    + '&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m'
+    + '&daily=temperature_2m_max,apparent_temperature_max,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max'
+    + '&temperature_unit=' + tUnit + '&wind_speed_unit=' + wUnit
+    + '&timezone=auto&forecast_days=16';
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Forecast service returned ' + res.status);
+  const j = await res.json();
+
+  const r1v = v => v==null ? null : Math.round(v*10)/10;
+
+  // ---- Hourly: next 48 h ----
+  const H = j.hourly, hourly = {labels:[],temp:[],feels:[],hum:[],rain:[],wind:[],gust:[]};
+  let start = H.time.findIndex(t => new Date(t) >= new Date());
+  if(start < 0) start = 0;
+  for(let i=start; i<start+48 && i<H.time.length; i++){
+    hourly.labels.push(new Date(H.time[i]).toLocaleString('en-US',{weekday:'short',hour:'numeric'}));
+    hourly.temp.push(r1v(H.temperature_2m[i]));
+    hourly.feels.push(r1v(H.apparent_temperature[i]));
+    hourly.hum.push(H.relative_humidity_2m[i]);
+    hourly.rain.push(H.precipitation_probability[i]);
+    hourly.wind.push(r1v(H.wind_speed_10m[i]));
+    hourly.gust.push(r1v(H.wind_gusts_10m[i]));
+  }
+  // Average humidity per day for the daily view
+  const humByDay = {};
+  H.time.forEach((t,i)=>{
+    const d = t.slice(0,10);
+    (humByDay[d] = humByDay[d] || []).push(H.relative_humidity_2m[i]);
+  });
+  const dayHum = d => {
+    const a = humByDay[d]; if(!a) return null;
+    return Math.round(a.reduce((x,y)=>x+y,0)/a.length);
+  };
+
+  // ---- Daily: 7 days ----
+  const D = j.daily, daily = {labels:[],temp:[],feels:[],hum:[],rain:[],wind:[],gust:[]};
+  for(let i=0; i<7 && i<D.time.length; i++){
+    daily.labels.push(new Date(D.time[i]+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'}));
+    daily.temp.push(r1v(D.temperature_2m_max[i]));
+    daily.feels.push(r1v(D.apparent_temperature_max[i]));
+    daily.hum.push(dayHum(D.time[i]));
+    daily.rain.push(D.precipitation_probability_max[i]);
+    daily.wind.push(r1v(D.wind_speed_10m_max[i]));
+    daily.gust.push(r1v(D.wind_gusts_10m_max[i]));
+  }
+
+  // ---- Weekly: 16-day forecast bucketed by week ----
+  const wk = (a,s,e)=>{
+    const seg = a.slice(s,e).filter(v=>v!=null);
+    return seg.length ? Math.round(seg.reduce((x,y)=>x+y,0)/seg.length*10)/10 : null;
+  };
+  const n = D.time.length;
+  const weekly = {labels:[],temp:[],feels:[],hum:[],rain:[],wind:[],gust:[]};
+  const buckets = [[0,7,'This week'],[7,14,'Next week'],[14,n,'Days 15–16']];
+  buckets.forEach(([s,e,label])=>{
+    if(s>=n) return;
+    e = Math.min(e,n);
+    weekly.labels.push(label);
+    weekly.temp.push(wk(D.temperature_2m_max,s,e));
+    weekly.feels.push(wk(D.apparent_temperature_max,s,e));
+    weekly.hum.push(wk(D.time.map(dayHum),s,e));
+    weekly.rain.push(wk(D.precipitation_probability_max,s,e));
+    weekly.wind.push(wk(D.wind_speed_10m_max,s,e));
+    weekly.gust.push(wk(D.wind_gusts_10m_max,s,e));
+  });
+
+  DATA = {hourly, daily, weekly};
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const UNITS = {t:'°F', w:'mph'};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+/* Charts inherit the page font stack so axis labels match the UI */
+Chart.defaults.font.family = css('--font').replace(/\s+/g,' ') ||
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+const C = {};
+/* Re-read theme colors from CSS variables so charts follow the active theme */
+function syncChartTheme(){
+  Chart.defaults.color = css('--muted');
+  Chart.defaults.borderColor = css('--line');
+  Object.assign(C, {temp:css('--temp'), feels:css('--feels'), hum:css('--hum'), rain:css('--rain'), wind:css('--wind')});
+}
+syncChartTheme();
+
+let charts = {};
+function destroyCharts(){ Object.values(charts).forEach(c=>c.destroy()); charts={}; }
+
+function renderNow(){
+  const h = DATA.hourly;
+  const delta = Math.round((h.feels[0]-h.temp[0])*10)/10;
+  const deltaHtml = delta >= 0
+    ? '<span class="delta-hot">+' + delta + '°</span> heat-index penalty'
+    : '<span class="delta-cold">' + delta + '°</span> wind-chill effect';
+  document.getElementById('nowStrip').innerHTML =
+    '<div class="card"><div class="label">Actual</div><div class="value">' + h.temp[0] + UNITS.t + '</div><div class="sub">air temperature</div></div>'
+  + '<div class="card"><div class="label">Feels like</div><div class="value">' + h.feels[0] + UNITS.t + '</div><div class="sub">' + deltaHtml + '</div></div>'
+  + '<div class="card"><div class="label">Humidity</div><div class="value">' + h.hum[0] + '%</div><div class="sub">relative</div></div>'
+  + '<div class="card"><div class="label">Rain chance</div><div class="value">' + h.rain[0] + '%</div><div class="sub">this hour</div></div>'
+  + '<div class="card"><div class="label">Wind</div><div class="value">' + h.wind[0] + ' ' + UNITS.w + '</div><div class="sub">gusts ' + h.gust[0] + ' ' + UNITS.w + '</div></div>';
+  document.getElementById('locLabel').textContent = LOC.name + ' · ' + LOC.lat.toFixed(2) + '°, ' + LOC.lon.toFixed(2) + '°';
+  document.getElementById('stamp').textContent =
+    'Updated ' + new Date().toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'});
+}
+
+function render(view){
+  const d = DATA[view];
+  destroyCharts();
+  document.getElementById('consolidatedTitle').textContent =
+    'Consolidated — all essentials (' + {hourly:'next 48 hours', daily:'next 7 days', weekly:'16-day trend'}[view] + ')';
+
+  const tempAxis = {title:{display:true,text:UNITS.t}};
+
+  charts.consolidated = new Chart(document.getElementById('consolidated'), {
+    data:{labels:d.labels, datasets:[
+      {type:'line', label:'Feels like ' + UNITS.t, data:d.feels, borderColor:C.feels,
+       backgroundColor:C.feels+'22', fill:'+1', tension:.35, pointRadius:0, yAxisID:'yF'},
+      {type:'line', label:'Actual ' + UNITS.t, data:d.temp, borderColor:C.temp,
+       tension:.35, pointRadius:0, yAxisID:'yF'},
+      {type:'line', label:'Humidity %', data:d.hum, borderColor:C.hum,
+       borderDash:[6,4], tension:.35, pointRadius:0, yAxisID:'yP'},
+      {type:'bar', label:'Rain chance %', data:d.rain, backgroundColor:C.rain+'55',
+       borderColor:C.rain, borderWidth:1, yAxisID:'yP'},
+      {type:'line', label:'Wind ' + UNITS.w, data:d.wind, borderColor:C.wind,
+       borderDash:[2,3], tension:.35, pointRadius:0, yAxisID:'yW'}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      plugins:{legend:{labels:{usePointStyle:true, boxHeight:6}}},
+      scales:{
+        x:{ticks:{maxTicksLimit: view==='hourly'?12:8}},
+        yF:Object.assign({position:'left'}, tempAxis),
+        yP:{position:'right', min:0, max:100, title:{display:true,text:'%'}, grid:{drawOnChartArea:false}},
+        yW:{display:false, min:0, suggestedMax:40}
+      }
+    }
+  });
+
+  charts.temp = new Chart(document.getElementById('tempChart'), {
+    type:'line',
+    data:{labels:d.labels, datasets:[
+      {label:'Feels like', data:d.feels, borderColor:C.feels, backgroundColor:C.feels+'25', fill:'+1', tension:.35, pointRadius:0},
+      {label:'Actual', data:d.temp, borderColor:C.temp, tension:.35, pointRadius:0}
+    ]},
+    options:opts(UNITS.t, view, {})
+  });
+
+  charts.hum = new Chart(document.getElementById('humChart'), {
+    type:'line',
+    data:{labels:d.labels, datasets:[
+      {label:'Relative humidity', data:d.hum, borderColor:C.hum, backgroundColor:C.hum+'25', fill:true, tension:.35, pointRadius:0}
+    ]},
+    options:opts('%', view, {min:0, max:100})
+  });
+
+  charts.rain = new Chart(document.getElementById('rainChart'), {
+    type:'bar',
+    data:{labels:d.labels, datasets:[
+      {label:'Chance of rain', data:d.rain, backgroundColor:C.rain+'88', borderColor:C.rain, borderWidth:1}
+    ]},
+    options:opts('%', view, {min:0, max:100})
+  });
+
+  charts.wind = new Chart(document.getElementById('windChart'), {
+    type:'line',
+    data:{labels:d.labels, datasets:[
+      {label:'Gusts', data:d.gust, borderColor:C.wind+'77', borderDash:[4,4], tension:.35, pointRadius:0},
+      {label:'Sustained', data:d.wind, borderColor:C.wind, backgroundColor:C.wind+'20', fill:true, tension:.35, pointRadius:0}
+    ]},
+    options:opts(UNITS.w, view, {min:0})
+  });
+}
+
+function opts(unit, view, y){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index', intersect:false},
+    plugins:{legend:{labels:{usePointStyle:true, boxHeight:6}}},
+    scales:{
+      x:{ticks:{maxTicksLimit: view==='hourly'?10:8}},
+      y:Object.assign({title:{display:true,text:unit}}, y)
+    }
+  };
+}
+
+/* =====================================================================
+   CONTROLLER
+   ===================================================================== */
+const statusEl = document.getElementById('status');
+function setStatus(msg, isErr){
+  statusEl.textContent = msg || '';
+  statusEl.className = 'status' + (isErr ? ' err' : '');
+}
+
+/* Demo fallback — renders realistic sample data if the live fetch is blocked
+   (no internet, or a network filter) so the page is never blank. */
+function buildSample(){
+  const r1v = v => Math.round(v*10)/10;
+  const hourly = {labels:[],temp:[],feels:[],hum:[],rain:[],wind:[],gust:[]};
+  const now = new Date(); now.setMinutes(0,0,0);
+  for(let i=0;i<48;i++){
+    const t = new Date(now.getTime()+i*3600e3), h = t.getHours();
+    const diurnal = Math.sin((h-9)/24*2*Math.PI);
+    const temp = 84 + 9*diurnal + Math.sin(i*1.7)*1.2;
+    const hum  = Math.max(48, Math.min(96, 74 - 22*diurnal + Math.sin(i*0.9)*4));
+    const feels = temp + Math.max(0,(temp-80))*(hum/100)*1.35;
+    const rain = (h>=13&&h<=19) ? 50+Math.sin(i*0.8)*20 : 12+Math.sin(i*0.6)*8;
+    const wind = 5 + 4*Math.max(0,diurnal) + Math.sin(i*1.1)*1.5;
+    hourly.labels.push(t.toLocaleString('en-US',{weekday:'short',hour:'numeric'}));
+    hourly.temp.push(r1v(temp)); hourly.feels.push(r1v(feels));
+    hourly.hum.push(Math.round(hum));
+    hourly.rain.push(Math.round(Math.max(0,Math.min(95,rain))));
+    hourly.wind.push(r1v(wind)); hourly.gust.push(r1v(wind*1.6));
+  }
+  const daily = {labels:[],temp:[],feels:[],hum:[],rain:[],wind:[],gust:[]};
+  for(let d=0; d<7; d++){
+    const t = new Date(now.getTime()+d*864e5);
+    daily.labels.push(t.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'}));
+    const hi = 91 + Math.sin(d*1.3)*2.5, hum = 72 + Math.sin(d*0.9)*8;
+    daily.temp.push(r1v(hi)); daily.feels.push(r1v(hi+(hi-80)*(hum/100)*1.4));
+    daily.hum.push(Math.round(hum));
+    daily.rain.push(Math.round(45+Math.sin(d*1.6)*25));
+    daily.wind.push(r1v(7+Math.sin(d)*2)); daily.gust.push(r1v((7+Math.sin(d)*2)*1.7));
+  }
+  const weekly = {labels:['This week','Next week','Days 15–16'],
+    temp:[92.1,93.4,91.2], feels:[103.8,106.2,101.9], hum:[74,71,77],
+    rain:[52,38,61], wind:[7.4,8.1,6.8], gust:[12.6,13.8,11.5]};
+
+  // Sample values are generated in °F/mph — convert when the active location is metric,
+  // otherwise the fallback would label Fahrenheit numbers as °C.
+  const out = {hourly, daily, weekly};
+  if(!isUS()){
+    const f2c = v => v==null ? null : Math.round((v-32)/1.8*10)/10;
+    const m2k = v => v==null ? null : Math.round(v*1.60934*10)/10;
+    Object.values(out).forEach(d=>{
+      d.temp = d.temp.map(f2c); d.feels = d.feels.map(f2c);
+      d.wind = d.wind.map(m2k); d.gust = d.gust.map(m2k);
+    });
+  }
+  return out;
+}
+
+async function refresh(){
+  try{
+    setStatus('Loading forecast for ' + LOC.name + '…');
+    await fetchLive();
+    renderNow();
+    render(document.querySelector('.tabs .active').dataset.view);
+    setStatus('Live data · ' + LOC.name);
+  }catch(e){
+    DATA = buildSample();
+    renderNow();
+    render(document.querySelector('.tabs .active').dataset.view);
+    setStatus('Showing DEMO data — live fetch failed (' + e.message + '). '
+      + 'Check your internet connection, or use Test connection to see which service is unreachable.', true);
+  }
+}
+
+async function updateLocation(q){
+  try{
+    setStatus('Looking up "' + q + '"…');
+    LOC = await resolveLocation(q);
+    await refresh();
+  }catch(e){
+    setStatus(e.message, true);
+  }
+}
+
+document.querySelectorAll('.tabs [data-view]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs [data-view]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(DATA) render(btn.dataset.view);
+  });
+});
+
+document.getElementById('goBtn').addEventListener('click', ()=>{
+  updateLocation(document.getElementById('locInput').value);
+});
+document.getElementById('locInput').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') updateLocation(e.target.value);
+});
+/* ---- Connection diagnostics: tests each service and reports what's blocked ---- */
+async function testEndpoint(label, url){
+  try{
+    const res = await fetch(url, {cache:'no-store'});
+    return res.ok ? '✅ ' + label + ' — OK'
+                  : '⚠️ ' + label + ' — reachable but returned HTTP ' + res.status;
+  }catch(e){
+    return '❌ ' + label + ' — BLOCKED (' + e.message + ')';
+  }
+}
+async function runDiagnostics(){
+  setStatus('Testing connections…');
+  const results = await Promise.all([
+    testEndpoint('Forecast API (api.open-meteo.com)',
+      'https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&hourly=temperature_2m&forecast_days=1'),
+    testEndpoint('Geocoding API (geocoding-api.open-meteo.com)',
+      'https://geocoding-api.open-meteo.com/v1/search?name=London&count=1'),
+    testEndpoint('ZIP lookup (api.zippopotam.us)',
+      'https://api.zippopotam.us/us/10001')
+  ]);
+  const cdnOk = (typeof Chart !== 'undefined')
+    ? '✅ Chart library CDN (cdnjs.cloudflare.com) — OK'
+    : '❌ Chart library CDN — BLOCKED';
+  const anyBlocked = results.some(r=>r.startsWith('❌'));
+  setStatus([cdnOk, ...results].join('   ·   ')
+    + (anyBlocked ? '   ·   Blocked domains usually mean a firewall/web filter — ask IT to allow them, or test on a phone using cellular data.' : ''),
+    anyBlocked);
+}
+document.getElementById('diagBtn').addEventListener('click', runDiagnostics);
+
+/* ---- Theme toggle: persists in localStorage, rebuilds charts with new colors ---- */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  try{ localStorage.setItem('theme', t); }catch(e){}
+  themeBtn.textContent = t === 'light' ? '🌙 Dark' : '☀️ Light';
+  syncChartTheme();
+  if(DATA) render(document.querySelector('.tabs .active').dataset.view);
+}
+themeBtn.addEventListener('click', ()=>{
+  applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+});
+try{ if(localStorage.getItem('theme') === 'light') applyTheme('light'); }catch(e){}
+
+document.getElementById('gpsBtn').addEventListener('click', ()=>{
+  if(!navigator.geolocation){ setStatus('Geolocation not supported on this device.', true); return; }
+  setStatus('Getting device location…');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      LOC = {name:'My location', lat:pos.coords.latitude, lon:pos.coords.longitude};
+      refresh();
+    },
+    ()=> setStatus('Location permission denied — enter a ZIP or city instead.', true)
+  );
+});
+
+/* ---- Init: load default location, then auto-refresh ---- */
+refresh();
+setInterval(refresh, REFRESH_MINUTES*60*1000);
+</script>
+</body>
+</html>

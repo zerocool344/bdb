@@ -95,10 +95,10 @@ def run_screener(watchlist):
     return pd.DataFrame(results)
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def get_chart_data(ticker_sym):
+def get_chart_data(ticker_sym, period="1y"):
     try:
         stock = yf.Ticker(ticker_sym)
-        hist = stock.history(period="1y")
+        hist = stock.history(period=period)
         if not hist.empty:
             return hist
     except Exception:
@@ -196,10 +196,19 @@ with tab2:
                 st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
                 st.markdown(f"**Risk:** {row['Risk']}")
                 
+                # Setup timeframe selection
+                ticker = row['Ticker']
+                key_name = f"period_{ticker}"
+                period_options = {"1D": "1d", "5D": "5d", "1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
+                
+                if key_name not in st.session_state:
+                    st.session_state[key_name] = "1Y"
+                fetch_period = period_options[st.session_state[key_name]]
+                
                 # Render Chart
-                chart_data = get_chart_data(row['Ticker'])
+                chart_data = get_chart_data(ticker, period=fetch_period)
                 if not chart_data.empty:
-                    st.markdown("**1-Year Price Trend**")
+                    st.markdown(f"**{st.session_state[key_name]} Price Trend**")
                     
                     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                                         vertical_spacing=0.03, row_width=[0.2, 0.7])
@@ -226,6 +235,18 @@ with tab2:
                     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
                     
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Timeframe Toggle (Centered below graph)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    tc1, tc2, tc3 = st.columns([1, 4, 1])
+                    with tc2:
+                        st.radio(
+                            f"Select Timeframe for {ticker}",
+                            options=list(period_options.keys()),
+                            horizontal=True,
+                            key=key_name,
+                            label_visibility="collapsed"
+                        )
 
 with tab3:
     st.subheader("🇺🇸 Nancy Pelosi Trade Tracker")

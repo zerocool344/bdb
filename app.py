@@ -17,12 +17,12 @@ WATCHLIST = [
 ]
 
 st.logo("logo.jpg")
-col_title, col_logo = st.columns([8, 1])
+col_logo, col_title = st.columns([1, 6])
+with col_logo:
+    st.image("logo.jpg", width=120)
 with col_title:
     st.title("DeepEffinValue Deck")
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
-with col_logo:
-    st.image("logo.jpg", width=80)
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def run_screener(watchlist):

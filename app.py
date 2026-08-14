@@ -19,7 +19,7 @@ WATCHLIST = [
 st.logo("logo.png")
 col_logo, col_title = st.columns([1, 10])
 with col_logo:
-    st.image("logo.png", width=120)
+    st.image("logo.png", use_container_width=True)
 with col_title:
     st.title("DeepEffinValue Deck")
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")

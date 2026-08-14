@@ -6,16 +6,16 @@ st.set_page_config(page_title="Daily Consensus Desk", layout="wide", page_icon="
 
 # Raw data from our research
 DATA = [
+    {"Ticker": "STX", "Name": "Seagate Technology", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 55.0, "Thesis": "Robust data storage demand", "Risk": "Cyclical industry"},
     {"Ticker": "GOOGL", "Name": "Alphabet Inc.", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 22.5, "Thesis": "Strong Cloud and AI growth", "Risk": "Elevated capital expenditure"},
     {"Ticker": "CVS", "Name": "CVS Health", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 21.0, "Thesis": "Earnings beat and value", "Risk": "Elevated medical cost trends"},
     {"Ticker": "AMZN", "Name": "Amazon.com", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 19.5, "Thesis": "AWS expansion and margin growth", "Risk": "E-commerce margin pressure"},
-    {"Ticker": "MSFT", "Name": "Microsoft Corp.", "List": "NEAR", "Decline %": None, "Consensus": "Buy", "Upside %": 13.0, "Thesis": "Durable AI infrastructure demand", "Risk": "AI capacity overbuild concerns"},
-    {"Ticker": "JPM", "Name": "JPMorgan Chase", "List": "NEAR", "Decline %": None, "Consensus": "Buy", "Upside %": 4.0, "Thesis": "Resilient core banking profitability", "Risk": "Valuation fully priced"},
+    {"Ticker": "LNG", "Name": "Cheniere Energy", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 15.0, "Thesis": "Global energy supply shifts", "Risk": "Commodity price volatility"},
     {"Ticker": "SNOW", "Name": "Snowflake Inc.", "List": "FAR", "Decline %": 45.0, "Consensus": "Buy", "Upside %": 35.0, "Thesis": "Enterprise client adoption growth", "Risk": "Valuation multiples"},
     {"Ticker": "CRM", "Name": "Salesforce Inc.", "List": "FAR", "Decline %": 37.0, "Consensus": "Buy", "Upside %": 27.0, "Thesis": "Undervalued AI monetization", "Risk": "Slow organic revenue growth"},
     {"Ticker": "NKE", "Name": "Nike Inc.", "List": "FAR", "Decline %": 60.0, "Consensus": "Moderate Buy", "Upside %": 25.0, "Thesis": "Long-term brand normalization", "Risk": "Management execution"},
     {"Ticker": "DIS", "Name": "Walt Disney Co.", "List": "FAR", "Decline %": 16.3, "Consensus": "Buy", "Upside %": 25.0, "Thesis": "Streaming profitability inflection", "Risk": "Park attendance softness"},
-    {"Ticker": "BA", "Name": "Boeing Co.", "List": "FAR", "Decline %": 10.0, "Consensus": "Buy", "Upside %": 17.0, "Thesis": "Production and cash flow recovery", "Risk": "Execution and safety risks"},
+    {"Ticker": "U", "Name": "Unity Software", "List": "FAR", "Decline %": 70.0, "Consensus": "Buy", "Upside %": 9.4, "Thesis": "Earnings turnaround", "Risk": "Ad-tech competition"},
 ]
 
 df = pd.DataFrame(DATA)

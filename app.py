@@ -241,11 +241,11 @@ with tab3:
 
 with tab4:
     st.subheader("📈 ETF Performance Tracking (1-Year)")
-    st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY** & **QQQ**).")
+    st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY**, **QQQ**, & **VOO**).")
     
     with st.spinner("Fetching ETF benchmark data..."):
         try:
-            tickers = ["NANC", "SPY", "QQQ"]
+            tickers = ["NANC", "SPY", "QQQ", "VOO"]
             data_dict = {}
             for t in tickers:
                 hist = yf.Ticker(t).history(period="1y")
@@ -257,7 +257,7 @@ with tab4:
                     
             if data_dict:
                 fig = go.Figure()
-                colors = {"NANC": "#1f77b4", "SPY": "#2ca02c", "QQQ": "#ff7f0e"}
+                colors = {"NANC": "#1f77b4", "SPY": "#2ca02c", "QQQ": "#ff7f0e", "VOO": "#d62728"}
                 
                 for t, df_t in data_dict.items():
                     fig.add_trace(go.Scatter(x=df_t.index, y=df_t['Return'], mode='lines', name=t, line=dict(color=colors.get(t))))

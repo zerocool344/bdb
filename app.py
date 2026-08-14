@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 import requests
 from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="logo.png")
+st.set_page_config(page_title="The Tendie Tracker", layout="wide", page_icon="logo.png")
 
 # Master Watchlist
 WATCHLIST = [
@@ -21,7 +21,7 @@ col_logo, col_title = st.columns([1, 10])
 with col_logo:
     st.image("logo.png", use_container_width=True)
 with col_title:
-    st.title("DeepEffinValue Deck")
+    st.title("The Tendie Tracker")
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 @st.cache_data(ttl=3600, show_spinner=False)

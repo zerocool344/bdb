@@ -1,4 +1,4 @@
-# Daily Consensus Desk (Live Screener)
+# The Tendie Tracker (Live Screener)
 
 An autonomous equity research screening dashboard built for Streamlit Community Cloud. This dashboard operates entirely on free, open-source APIs without requiring any credentials or API keys.
 

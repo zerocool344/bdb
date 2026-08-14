@@ -20,7 +20,7 @@ st.logo("logo.jpg")
 col_title, col_logo = st.columns([8, 1])
 with col_title:
     st.title("DeepEffinValue Deck")
-    st.markdown("An autonomous equity research screening dashboard. Information is purely research and not financial advice.")
+    st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 with col_logo:
     st.image("logo.jpg", width=80)
 

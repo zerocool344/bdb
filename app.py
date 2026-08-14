@@ -4,6 +4,8 @@ import yfinance as yf
 import time
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import requests
+from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="Daily Consensus Desk", layout="wide", page_icon="📈")
 
@@ -103,6 +105,30 @@ def get_chart_data(ticker_sym):
         pass
     return pd.DataFrame()
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_pelosi_trades():
+    url = "https://www.capitoltrades.com/politicians/P000197"
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    trades = []
+    try:
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        rows = soup.find_all('tr')
+        for row in rows:
+            ticker_span = row.find('span', class_='issuer-ticker')
+            if not ticker_span: continue
+            ticker = ticker_span.text.split(':')[0]
+            type_span = row.find('span', class_='tx-type')
+            tx_type = type_span.text.strip().title() if type_span else "Unknown"
+            dates = row.find_all('div', class_='text-size-3 font-medium')
+            traded_date = dates[0].text.strip() if len(dates) > 0 else "Unknown"
+            size_span = row.find('span', class_='mt-1 text-size-2 text-txt-dimmer hover:text-foreground')
+            size = size_span.text.strip().replace('', '-') if size_span else "Unknown"
+            trades.append({"Ticker": ticker, "Action": tx_type, "Date Traded": traded_date, "Trade Size": size})
+        return pd.DataFrame(trades)
+    except Exception:
+        return pd.DataFrame()
+
 # Header with Refresh button
 col1, col2 = st.columns([8, 1])
 with col2:
@@ -115,7 +141,7 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab2 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights"])
+tab1, tab2, tab3 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🇺🇸 Pelosi Tracker"])
 
 with tab1:
     st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
@@ -186,3 +212,15 @@ with tab2:
                     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
                     
                     st.plotly_chart(fig, use_container_width=True)
+
+with tab3:
+    st.subheader("🇺🇸 Nancy Pelosi Trade Tracker")
+    st.markdown("### ⚠️ DATA LAG NOTICE")
+    st.warning("By law (The STOCK Act), members of Congress have up to 45 days to report their trades. The data below represents the most recent **publicly disclosed filings**, but it is not real-time to the day the trade was executed.")
+    
+    with st.spinner("Scraping latest public disclosures..."):
+        pelosi_df = get_pelosi_trades()
+        if not pelosi_df.empty:
+            st.dataframe(pelosi_df, use_container_width=True, hide_index=True)
+        else:
+            st.error("Failed to scrape trades. The source website might be temporarily blocking automated requests.")

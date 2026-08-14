@@ -9,36 +9,6 @@ from bs4 import BeautifulSoup
 
 st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="logo.png")
 
-# CSS Animated Kitty Progress Bar
-st.markdown("""
-<style>
-@keyframes chase {
-  0% { transform: translateX(-100px); }
-  100% { transform: translateX(100vw); }
-}
-.cat-tracker {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, #2e6fdf, transparent);
-  z-index: 999999;
-  pointer-events: none;
-}
-.progress-cat {
-  position: absolute;
-  top: -14px;
-  font-size: 16px;
-  white-space: nowrap;
-  animation: chase 5s linear infinite;
-}
-</style>
-<div class="cat-tracker">
-  <div class="progress-cat">🐈 &nbsp;&nbsp;&nbsp; 🧶</div>
-</div>
-""", unsafe_allow_html=True)
-
 # Master Watchlist
 WATCHLIST = [
     "GOOGL", "CVS", "AMZN", "MSFT", "JPM", 

@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 import requests
 from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="logo.jpg")
+st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="logo.png")
 
 # Master Watchlist
 WATCHLIST = [
@@ -16,10 +16,10 @@ WATCHLIST = [
     "STX", "LNG", "U", "AAPL", "NVDA", "META"
 ]
 
-st.logo("logo.jpg")
-col_logo, col_title = st.columns([1, 6])
+st.logo("logo.png")
+col_logo, col_title = st.columns([1, 10])
 with col_logo:
-    st.image("logo.jpg", width=120)
+    st.image("logo.png", width=120)
 with col_title:
     st.title("DeepEffinValue Deck")
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")

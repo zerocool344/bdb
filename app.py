@@ -1,58 +1,121 @@
 import streamlit as st
 import pandas as pd
 import yfinance as yf
+import time
 
 st.set_page_config(page_title="Daily Consensus Desk", layout="wide", page_icon="📈")
 
-# Raw data from our research
-DATA = [
-    {"Ticker": "STX", "Name": "Seagate Technology", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 55.0, "Thesis": "Robust data storage demand", "Risk": "Cyclical industry"},
-    {"Ticker": "GOOGL", "Name": "Alphabet Inc.", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 22.5, "Thesis": "Strong Cloud and AI growth", "Risk": "Elevated capital expenditure"},
-    {"Ticker": "CVS", "Name": "CVS Health", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 21.0, "Thesis": "Earnings beat and value", "Risk": "Elevated medical cost trends"},
-    {"Ticker": "AMZN", "Name": "Amazon.com", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 19.5, "Thesis": "AWS expansion and margin growth", "Risk": "E-commerce margin pressure"},
-    {"Ticker": "LNG", "Name": "Cheniere Energy", "List": "NEAR", "Decline %": None, "Consensus": "Strong Buy", "Upside %": 15.0, "Thesis": "Global energy supply shifts", "Risk": "Commodity price volatility"},
-    {"Ticker": "SNOW", "Name": "Snowflake Inc.", "List": "FAR", "Decline %": 45.0, "Consensus": "Buy", "Upside %": 35.0, "Thesis": "Enterprise client adoption growth", "Risk": "Valuation multiples"},
-    {"Ticker": "CRM", "Name": "Salesforce Inc.", "List": "FAR", "Decline %": 37.0, "Consensus": "Buy", "Upside %": 27.0, "Thesis": "Undervalued AI monetization", "Risk": "Slow organic revenue growth"},
-    {"Ticker": "NKE", "Name": "Nike Inc.", "List": "FAR", "Decline %": 60.0, "Consensus": "Moderate Buy", "Upside %": 25.0, "Thesis": "Long-term brand normalization", "Risk": "Management execution"},
-    {"Ticker": "DIS", "Name": "Walt Disney Co.", "List": "FAR", "Decline %": 16.3, "Consensus": "Buy", "Upside %": 25.0, "Thesis": "Streaming profitability inflection", "Risk": "Park attendance softness"},
-    {"Ticker": "U", "Name": "Unity Software", "List": "FAR", "Decline %": 70.0, "Consensus": "Buy", "Upside %": 9.4, "Thesis": "Earnings turnaround", "Risk": "Ad-tech competition"},
+# Master Watchlist
+WATCHLIST = [
+    "GOOGL", "CVS", "AMZN", "MSFT", "JPM", 
+    "SNOW", "CRM", "NKE", "DIS", "BA", 
+    "STX", "LNG", "U", "AAPL", "NVDA", "META"
 ]
 
-df = pd.DataFrame(DATA)
+st.title("📈 Daily Consensus Desk (Live Screener)")
+st.markdown("An autonomous equity research screening dashboard. Information is purely research and not financial advice.")
 
-st.title("📈 Daily Consensus Desk")
-st.markdown("An equity research screening dashboard. Information is purely research and not financial advice.")
-
-# Caching to avoid hammering the Yahoo Finance API
-@st.cache_data(ttl=3600)
-def fetch_live_price(ticker):
-    try:
-        stock = yf.Ticker(ticker)
-        data = stock.history(period="1d")
-        if not data.empty:
-            return round(data["Close"].iloc[-1], 2)
-        return "N/A"
-    except Exception:
-        return "Error"
+@st.cache_data(ttl=3600, show_spinner=False)
+def run_screener(watchlist):
+    results = []
+    
+    # Optional progress bar if running in Streamlit
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, ticker_sym in enumerate(watchlist):
+        status_text.text(f"Screening {ticker_sym}...")
+        try:
+            stock = yf.Ticker(ticker_sym)
+            info = stock.info
+            
+            # Fetch data fields
+            name = info.get("shortName", ticker_sym)
+            current_price = info.get("currentPrice")
+            target_price = info.get("targetMeanPrice")
+            rec_key = info.get("recommendationKey", "N/A")
+            
+            # Format recommendation string
+            consensus = rec_key.replace("_", " ").title() if rec_key != "none" else "N/A"
+            
+            # Calculate Upside
+            upside = None
+            if current_price and target_price and current_price > 0:
+                upside = round(((target_price - current_price) / current_price) * 100, 2)
+            
+            # Determine List Placement (NEAR vs FAR vs NEUTRAL)
+            # FAR = High upside (e.g. > 25%), NEAR = Moderate upside (e.g. 10-25%)
+            # This is a dynamic rule set based on upside.
+            list_placement = "NEUTRAL"
+            if upside is not None:
+                if upside > 25.0:
+                    list_placement = "FAR (Deep Value)"
+                elif upside >= 10.0:
+                    list_placement = "NEAR (Growth/Value)"
+                else:
+                    list_placement = "WATCH (Low Upside)"
+                    
+            results.append({
+                "Ticker": ticker_sym,
+                "Name": name,
+                "List": list_placement,
+                "Current Price": f"${current_price}" if current_price else "N/A",
+                "Target Price": f"${target_price}" if target_price else "N/A",
+                "Consensus": consensus,
+                "Upside %": upside if upside is not None else 0.0,
+                "Thesis": f"Dynamic rating: {consensus}. Target: {target_price}",
+                "Risk": "Market volatility, execution risk."
+            })
+            
+        except Exception as e:
+            # Handle SSL or rate limit errors gracefully
+            results.append({
+                "Ticker": ticker_sym,
+                "Name": "Data Fetch Error",
+                "List": "ERROR",
+                "Current Price": "N/A",
+                "Target Price": "N/A",
+                "Consensus": "N/A",
+                "Upside %": 0.0,
+                "Thesis": "Error fetching data.",
+                "Risk": str(e)
+            })
+            
+        # Update progress
+        progress_bar.progress((i + 1) / len(watchlist))
+        time.sleep(0.1) # Small delay to respect rate limits
+        
+    progress_bar.empty()
+    status_text.empty()
+    
+    return pd.DataFrame(results)
 
 # Header with Refresh button
 col1, col2 = st.columns([8, 1])
 with col2:
-    if st.button("🔄 Refresh Data", help="Clears cache and fetches latest prices from Yahoo Finance"):
+    if st.button("🔄 Refresh Live Data", help="Clears cache and screens Yahoo Finance live"):
         st.cache_data.clear()
         st.rerun()
 
+# Run the screener (will use cache unless refreshed)
+with st.spinner("Running Live Market Screener..."):
+    df = run_screener(WATCHLIST)
+
 # Tabs
-tab1, tab2 = st.tabs(["Overview (Consensus)", "Stock Insights"])
+tab1, tab2 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights"])
 
 with tab1:
-    st.subheader("NEAR | 1–2 Year Consensus")
-    near_df = df[df['List'] == 'NEAR'].drop(columns=['List', 'Decline %']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+    st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
+    near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
     st.dataframe(near_df, use_container_width=True)
 
-    st.subheader("FAR | 2–5 Year Deep Value")
-    far_df = df[df['List'] == 'FAR'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+    st.subheader("FAR | 2–5 Year Deep Value (>25% Upside)")
+    far_df = df[df['List'] == 'FAR (Deep Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
     st.dataframe(far_df, use_container_width=True)
+    
+    st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
+    watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+    st.dataframe(watch_df, use_container_width=True)
 
 with tab2:
     st.subheader("🔍 Interactive Stock Insights")
@@ -69,22 +132,13 @@ with tab2:
     else:
         for index, row in filtered_df.iterrows():
             with st.container(border=True):
-                # We use metric cards here
                 c1, c2, c3, c4 = st.columns(4)
-                live_price = fetch_live_price(row['Ticker'])
                 
-                c1.metric(label=f"**{row['Ticker']}** - {row['Name']}", value=f"${live_price}" if live_price != "N/A" else "N/A")
-                
-                # Color code the consensus
-                cons_color = "normal"
-                if "Buy" in row['Consensus']:
-                    cons_color = "normal"
-                
+                c1.metric(label=f"**{row['Ticker']}** - {row['Name']}", value=row['Current Price'])
                 c2.metric(label="Consensus Rating", value=row['Consensus'])
-                c3.metric(label="Target Upside", value=f"{row['Upside %']}%")
+                c3.metric(label="Target Price (Mean)", value=row['Target Price'])
+                c4.metric(label="Target Upside", value=f"{row['Upside %']}%" if row['Upside %'] != 0.0 else "N/A")
                 
-                if pd.notna(row['Decline %']):
-                    c4.metric(label="High Decline (FAR)", value=f"-{row['Decline %']}%")
-                
-                st.markdown(f"**Thesis:** {row['Thesis']}")
+                st.markdown(f"**List Classification:** {row['List']}")
+                st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
                 st.markdown(f"**Risk:** {row['Risk']}")

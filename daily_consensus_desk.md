@@ -1,31 +1,30 @@
-# Daily Consensus Desk
-As of: 2026-08-14
-Market data through: 2026-08-14
+# Daily Consensus Desk - Methodology
 
-## NEAR | 1–2 Year Consensus
+This document outlines the methodology for the autonomous Daily Consensus Desk Streamlit application. The dashboard has been migrated from a static, manually updated markdown report to a dynamic live screener.
 
-| Ticker | Name | Type | Decline % | Consensus rating | Analyst count | Target upside % | Change vs prior run | Thesis | Risk | Source | Source date |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **STX** | Seagate Technology | Stock | null | Strong Buy | 25 | 55.0 | New Addition | Robust data storage demand | Cyclical industry | [Yahoo Finance](https://finance.yahoo.com/quote/STX) | 2026-08-14 |
-| **GOOGL** | Alphabet Inc. | Stock | null | Strong Buy | 45 | 22.5 | Unchanged | Strong Cloud and AI growth | Elevated capital expenditure | [Yahoo Finance](https://finance.yahoo.com/quote/GOOGL) | 2026-08-14 |
-| **CVS** | CVS Health | Stock | null | Strong Buy | 29 | 21.0 | Unchanged | Earnings beat and value | Elevated medical cost trends | [Yahoo Finance](https://finance.yahoo.com/quote/CVS) | 2026-08-14 |
-| **AMZN** | Amazon.com | Stock | null | Strong Buy | 40 | 19.5 | Unchanged | AWS expansion and margin growth | E-commerce margin pressure | [Yahoo Finance](https://finance.yahoo.com/quote/AMZN) | 2026-08-14 |
-| **LNG** | Cheniere Energy | Stock | null | Strong Buy | 20 | 15.0 | New Addition | Global energy supply shifts | Commodity price volatility | [Yahoo Finance](https://finance.yahoo.com/quote/LNG) | 2026-08-14 |
+## Core Philosophy
+The objective of this screener is to surface high-conviction, strong-buy candidates and categorize them based on their implied upside relative to analyst price targets.
 
-## FAR | 2–5 Year Deep Value
+## Data Sourcing
+*   **Provider**: Data is fetched on-demand using the public Yahoo Finance API (`yfinance` library).
+*   **Metrics Tracked**:
+    *   Current Price
+    *   Target Mean Price (Aggregated analyst consensus target)
+    *   Recommendation Key (Buy, Strong Buy, Hold, etc.)
+*   **Security**: The application operates without API keys or authentication, ensuring completely anonymous data scraping with zero risk to personal financial data.
 
-| Ticker | Name | Type | Decline % | Consensus rating | Analyst count | Target upside % | Change vs prior run | Thesis | Risk | Source | Source date |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **SNOW** | Snowflake Inc. | Stock | 45.0 | Buy | 30 | 35.0 | Unchanged | Enterprise client adoption growth | Valuation multiples | [Yahoo Finance](https://finance.yahoo.com/quote/SNOW) | 2026-08-14 |
-| **CRM** | Salesforce Inc. | Stock | 37.0 | Buy | 40 | 27.0 | Unchanged | Undervalued AI monetization | Slow organic revenue growth | [Yahoo Finance](https://finance.yahoo.com/quote/CRM) | 2026-08-14 |
-| **NKE** | Nike Inc. | Stock | 60.0 | Moderate Buy | 30 | 25.0 | Unchanged | Long-term brand normalization | Management execution | [Yahoo Finance](https://finance.yahoo.com/quote/NKE) | 2026-08-14 |
-| **DIS** | Walt Disney Co. | Stock | 16.3 | Buy | 25 | 25.0 | Unchanged | Streaming profitability inflection | Park attendance softness | [Google Finance](https://www.google.com/finance/quote/DIS:NYSE) | 2026-08-14 |
-| **U** | Unity Software | Stock | 70.0 | Buy | 20 | 9.4 | New Addition | Earnings turnaround | Ad-tech competition | [Yahoo Finance](https://finance.yahoo.com/quote/U) | 2026-08-14 |
+## Classification Logic
+The dashboard automatically classifies stocks into three primary lists based on the calculated upside percentage `((Target Price - Current Price) / Current Price) * 100`:
 
-### CHANGES SINCE PRIOR RUN
-*   **STX** & **LNG**: Added to NEAR list due to strong buy ratings and significant upside based on mid-August 2026 data. Replaced MSFT and JPM to surface higher potential yields.
-*   **U**: Added to FAR list following an earnings turnaround and multiple analyst upgrades to "Buy". Replaced BA.
+1.  **FAR (Deep Value)**: 
+    *   *Threshold*: > 25% Implied Upside.
+    *   *Profile*: Stocks that are typically undergoing a turnaround, have been heavily discounted from their highs, or present massive long-term (2-5 year) value opportunities.
+2.  **NEAR (Growth/Value)**: 
+    *   *Threshold*: 10% - 25% Implied Upside.
+    *   *Profile*: Stable, near-term (1-2 year) consensus picks that offer strong, realistic growth trajectories without relying on massive turnaround bets.
+3.  **WATCH (Low Upside)**:
+    *   *Threshold*: < 10% Implied Upside.
+    *   *Profile*: Stocks that are likely fully valued or overvalued according to current analyst price targets.
 
-### SOURCE AND QUALITY NOTES
-*   All data sourced cross-referencing Yahoo Finance and analyst aggregations as of August 14, 2026.
-*   *This is a research screen based on published market information, not personalized investment advice.*
+## Execution
+To run the screener, launch the Streamlit application and click the **"Refresh Live Data"** button. The application will iterate through the configured `WATCHLIST` and dynamically generate the tables.

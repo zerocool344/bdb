@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 import requests
 from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="💎")
+st.set_page_config(page_title="DeepEffinValue Deck", layout="wide", page_icon="logo.jpg")
 
 # Master Watchlist
 WATCHLIST = [
@@ -19,7 +19,7 @@ WATCHLIST = [
 st.logo("logo.jpg")
 col_title, col_logo = st.columns([8, 1])
 with col_title:
-    st.title("💎 DeepEffinValue Deck")
+    st.title("DeepEffinValue Deck")
     st.markdown("An autonomous equity research screening dashboard. Information is purely research and not financial advice.")
 with col_logo:
     st.image("logo.jpg", width=80)

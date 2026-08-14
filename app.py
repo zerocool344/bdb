@@ -148,18 +148,9 @@ def get_pelosi_trades():
     except Exception as e:
         return pd.DataFrame()
 
-# Header with Refresh button & Theme Toggle
-col1, col2, col3 = st.columns([7, 1.5, 1.5])
+# Header with Refresh button
+col1, col2 = st.columns([8, 1])
 with col2:
-    dark_mode = st.toggle("🌙 Dark Mode")
-    if dark_mode:
-        st.markdown("""
-        <style>
-        html { filter: invert(1) hue-rotate(180deg); }
-        img, svg, canvas, iframe, video { filter: invert(1) hue-rotate(180deg); }
-        </style>
-        """, unsafe_allow_html=True)
-with col3:
     if st.button("🔄 Refresh Live Data", help="Clears cache and screens Yahoo Finance live"):
         st.cache_data.clear()
         st.rerun()

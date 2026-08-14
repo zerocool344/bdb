@@ -240,15 +240,21 @@ with tab3:
             st.error("Failed to scrape trades. The source website might be temporarily blocking automated requests.")
 
 with tab4:
-    st.subheader("📈 ETF Performance Tracking (1-Year)")
+    st.subheader("📈 ETF Performance Tracking")
     st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY**, **QQQ**, & **VOO**).")
     
+    period_options = {"1D": "1d", "5D": "5d", "1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
+    if "etf_period" not in st.session_state:
+        st.session_state.etf_period = "1Y"
+        
     with st.spinner("Fetching ETF benchmark data..."):
         try:
             tickers = ["NANC", "SPY", "QQQ", "VOO"]
             data_dict = {}
+            fetch_period = period_options[st.session_state.etf_period]
+            
             for t in tickers:
-                hist = yf.Ticker(t).history(period="1y")
+                hist = yf.Ticker(t).history(period=fetch_period)
                 if not hist.empty:
                     # Normalize to percentage return
                     first_close = hist['Close'].iloc[0]
@@ -263,7 +269,7 @@ with tab4:
                     fig.add_trace(go.Scatter(x=df_t.index, y=df_t['Return'], mode='lines', name=t, line=dict(color=colors.get(t))))
                     
                 fig.update_layout(
-                    title="1-Year Cumulative Return (%)",
+                    title=f"{st.session_state.etf_period} Cumulative Return (%)",
                     yaxis_title="Return (%)",
                     xaxis_title="Date",
                     height=400,
@@ -276,5 +282,17 @@ with tab4:
                 fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)', ticksuffix="%")
                 
                 st.plotly_chart(fig, use_container_width=True)
+                
+            # Timeframe Toggle (Centered below graph)
+            st.markdown("<br>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([1, 4, 1])
+            with col2:
+                st.radio(
+                    "Select Timeframe",
+                    options=list(period_options.keys()),
+                    horizontal=True,
+                    key="etf_period",
+                    label_visibility="collapsed"
+                )
         except Exception as e:
             st.error(f"Could not load ETF data: {e}")

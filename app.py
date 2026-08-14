@@ -108,7 +108,11 @@ def get_chart_data(ticker_sym):
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_pelosi_trades():
     url = "https://www.capitoltrades.com/politicians/P000197"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+    }
     trades = []
     try:
         response = requests.get(url, headers=headers)

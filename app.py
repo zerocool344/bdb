@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import time
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 st.set_page_config(page_title="Daily Consensus Desk", layout="wide", page_icon="📈")
 
@@ -96,7 +98,7 @@ def get_chart_data(ticker_sym):
         stock = yf.Ticker(ticker_sym)
         hist = stock.history(period="1y")
         if not hist.empty:
-            return hist[['Close']]
+            return hist
     except Exception:
         pass
     return pd.DataFrame()
@@ -158,4 +160,29 @@ with tab2:
                 chart_data = get_chart_data(row['Ticker'])
                 if not chart_data.empty:
                     st.markdown("**1-Year Price Trend**")
-                    st.line_chart(chart_data, height=150)
+                    
+                    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                                        vertical_spacing=0.03, row_width=[0.2, 0.7])
+                    
+                    fig.add_trace(go.Candlestick(x=chart_data.index,
+                                    open=chart_data['Open'],
+                                    high=chart_data['High'],
+                                    low=chart_data['Low'],
+                                    close=chart_data['Close'],
+                                    name="Price"), row=1, col=1)
+                    
+                    colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
+                    fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
+                    
+                    fig.update_layout(
+                        xaxis_rangeslider_visible=False,
+                        height=400,
+                        margin=dict(l=0, r=0, t=10, b=0),
+                        showlegend=False,
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)"
+                    )
+                    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                    
+                    st.plotly_chart(fig, use_container_width=True)

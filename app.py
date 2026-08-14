@@ -141,7 +141,7 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🇺🇸 Pelosi Tracker"])
+tab1, tab2, tab3, tab4 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks"])
 
 with tab1:
     st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
@@ -225,7 +225,7 @@ with tab3:
         else:
             st.error("Failed to scrape trades. The source website might be temporarily blocking automated requests.")
 
-    st.divider()
+with tab4:
     st.subheader("📈 ETF Performance Tracking (1-Year)")
     st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY** & **QQQ**).")
     

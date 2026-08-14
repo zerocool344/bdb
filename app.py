@@ -224,3 +224,43 @@ with tab3:
             st.dataframe(pelosi_df, use_container_width=True, hide_index=True)
         else:
             st.error("Failed to scrape trades. The source website might be temporarily blocking automated requests.")
+
+    st.divider()
+    st.subheader("📈 ETF Performance Tracking (1-Year)")
+    st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY** & **QQQ**).")
+    
+    with st.spinner("Fetching ETF benchmark data..."):
+        try:
+            tickers = ["NANC", "SPY", "QQQ"]
+            data_dict = {}
+            for t in tickers:
+                hist = yf.Ticker(t).history(period="1y")
+                if not hist.empty:
+                    # Normalize to percentage return
+                    first_close = hist['Close'].iloc[0]
+                    hist['Return'] = ((hist['Close'] - first_close) / first_close) * 100
+                    data_dict[t] = hist
+                    
+            if data_dict:
+                fig = go.Figure()
+                colors = {"NANC": "#1f77b4", "SPY": "#2ca02c", "QQQ": "#ff7f0e"}
+                
+                for t, df_t in data_dict.items():
+                    fig.add_trace(go.Scatter(x=df_t.index, y=df_t['Return'], mode='lines', name=t, line=dict(color=colors.get(t))))
+                    
+                fig.update_layout(
+                    title="1-Year Cumulative Return (%)",
+                    yaxis_title="Return (%)",
+                    xaxis_title="Date",
+                    height=400,
+                    margin=dict(l=0, r=0, t=40, b=0),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    hovermode="x unified"
+                )
+                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)', ticksuffix="%")
+                
+                st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Could not load ETF data: {e}")

@@ -107,30 +107,40 @@ def get_chart_data(ticker_sym):
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_pelosi_trades():
-    url = "https://www.capitoltrades.com/politicians/P000197"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-    }
-    trades = []
     try:
-        response = requests.get(url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        rows = soup.find_all('tr')
-        for row in rows:
-            ticker_span = row.find('span', class_='issuer-ticker')
-            if not ticker_span: continue
-            ticker = ticker_span.text.split(':')[0]
-            type_span = row.find('span', class_='tx-type')
-            tx_type = type_span.text.strip().title() if type_span else "Unknown"
-            dates = row.find_all('div', class_='text-size-3 font-medium')
-            traded_date = dates[0].text.strip() if len(dates) > 0 else "Unknown"
-            size_span = row.find('span', class_='mt-1 text-size-2 text-txt-dimmer hover:text-foreground')
-            size = size_span.text.strip().replace('', '-') if size_span else "Unknown"
-            trades.append({"Ticker": ticker, "Action": tx_type, "Date Traded": traded_date, "Trade Size": size})
-        return pd.DataFrame(trades)
-    except Exception:
+        # Pulling 2026 data directly from the raw GitHub parquet file (never gets blocked by Cloudflare/WAF)
+        url = "https://raw.githubusercontent.com/kovagent/congresskit/main/data/year=2026/congress-2026.parquet"
+        df = pd.read_parquet(url)
+        pelosi = df[df['member_name'].str.contains('Pelosi', na=False, case=False)].copy()
+        
+        if pelosi.empty:
+            return pd.DataFrame()
+            
+        def format_amount(row):
+            try:
+                low = float(row['amount_low']) if not pd.isna(row['amount_low']) else 0
+                high = float(row['amount_high']) if not pd.isna(row['amount_high']) else 0
+                def format_num(n):
+                    if n >= 1e6: return f"${int(n/1e6)}M"
+                    if n >= 1e3: return f"${int(n/1e3)}K"
+                    return f"${int(n)}"
+                return f"{format_num(low)} - {format_num(high)}"
+            except:
+                return "Unknown"
+                
+        pelosi['Size'] = pelosi.apply(format_amount, axis=1)
+        pelosi['Action'] = pelosi['txn_type'].str.replace('_', ' ').str.title()
+        
+        pelosi['Date Traded'] = pd.to_datetime(pelosi['txn_date'], format='%Y%m%d', errors='coerce').dt.strftime('%Y-%m-%d')
+        pelosi.loc[pelosi['Date Traded'].isna(), 'Date Traded'] = pelosi['txn_date']
+        
+        pelosi = pelosi.rename(columns={'ticker': 'Ticker'})
+        pelosi = pelosi.dropna(subset=['Ticker'])
+        pelosi = pelosi[pelosi['Ticker'] != '']
+        
+        final = pelosi[['Ticker', 'Action', 'Date Traded', 'Size']].sort_values(by='Date Traded', ascending=False)
+        return final
+    except Exception as e:
         return pd.DataFrame()
 
 # Header with Refresh button

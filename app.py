@@ -90,6 +90,17 @@ def run_screener(watchlist):
     
     return pd.DataFrame(results)
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_chart_data(ticker_sym):
+    try:
+        stock = yf.Ticker(ticker_sym)
+        hist = stock.history(period="1y")
+        if not hist.empty:
+            return hist[['Close']]
+    except Exception:
+        pass
+    return pd.DataFrame()
+
 # Header with Refresh button
 col1, col2 = st.columns([8, 1])
 with col2:
@@ -142,3 +153,9 @@ with tab2:
                 st.markdown(f"**List Classification:** {row['List']}")
                 st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
                 st.markdown(f"**Risk:** {row['Risk']}")
+                
+                # Render Chart
+                chart_data = get_chart_data(row['Ticker'])
+                if not chart_data.empty:
+                    st.markdown("**1-Year Price Trend**")
+                    st.line_chart(chart_data, height=150)

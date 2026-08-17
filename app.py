@@ -210,7 +210,7 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🧬 Deep Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks"])
 
 with tab1:
     st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
@@ -260,97 +260,61 @@ with tab2:
                     st.session_state[key_name] = "1Y"
                 fetch_period = period_options[st.session_state[key_name]]
                 
-                # Fetch deeper insights (Insider/Options)
-                extra_data = get_insider_options_data(ticker)
-                
-                # Render Chart
-                chart_data = get_chart_data(ticker, period=fetch_period)
-                if not chart_data.empty:
-                    st.markdown(f"**{st.session_state[key_name]} Price Trend**")
-                    
-                    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
-                                        vertical_spacing=0.03, row_width=[0.2, 0.7])
-                    
-                    fig.add_trace(go.Candlestick(x=chart_data.index,
-                                    open=chart_data['Open'],
-                                    high=chart_data['High'],
-                                    low=chart_data['Low'],
-                                    close=chart_data['Close'],
-                                    name="Price"), row=1, col=1)
-                    
-                    colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
-                    fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
-                    
-                    fig.update_layout(
-                        xaxis_rangeslider_visible=False,
-                        height=400,
-                        margin=dict(l=0, r=0, t=10, b=0),
-                        showlegend=False,
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        paper_bgcolor="rgba(0,0,0,0)"
-                    )
-                    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-                    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Timeframe Toggle (Centered below graph)
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    tc1, tc2, tc3 = st.columns([1, 4, 1])
-                    with tc2:
-                        st.radio(
-                            f"Select Timeframe for {ticker}",
-                            options=list(period_options.keys()),
-                            horizontal=True,
-                            key=key_name,
                             label_visibility="collapsed"
                         )
-                
-                st.divider()
-                
-                # Deep Dive Sections
-                st.markdown(f"### 🧬 Deep Insights: {ticker}")
-                
-                # We calculate fundamentals dynamically using the info pulled during the screener
-                try:
-                    f_info = yf.Ticker(ticker).info
-                    score, flags = calculate_fundamental_score(f_info)
-                    
-                    f1, f2, f3 = st.columns(3)
-                    with f1:
-                        st.markdown("**Fundamentals (Norn-Style)**")
-                        st.write(f"**Health Score:** {score}/3")
-                        for f in flags:
-                            st.write(f)
-                            
-                    with f2:
-                        st.markdown("**SEC Insider Trading**")
-                        if not extra_data["insider"].empty:
-                            # Cleanup columns if they exist
-                            idf = extra_data["insider"].copy()
-                            cols = [c for c in ['Start Date', 'Insider', 'Position', 'Transaction', 'Value'] if c in idf.columns]
-                            if cols:
-                                st.dataframe(idf[cols].head(5), hide_index=True, use_container_width=True)
-                            else:
-                                st.dataframe(idf.head(5), hide_index=True, use_container_width=True)
-                        else:
-                            st.info("No recent insider transactions filed.")
-                            
-                    with f3:
-                        st.markdown("**Options Chain (OpenBB-Style)**")
-                        if extra_data["options"]:
-                            st.write(f"**Nearest Expiry:** {extra_data['options']['date']}")
-                            opt_tabs = st.tabs(["Calls", "Puts"])
-                            with opt_tabs[0]:
-                                st.dataframe(extra_data["options"]["calls"], hide_index=True, use_container_width=True)
-                            with opt_tabs[1]:
-                                st.dataframe(extra_data["options"]["puts"], hide_index=True, use_container_width=True)
-                        else:
-                            st.info("No options chain data available.")
                 except Exception as e:
-                    st.error("Error loading deep insights.")
+                    st.error("Error loading interactive insights.")
 
 with tab3:
+    st.subheader("🧬 Deep Insights (Fundamentals, Insider, Options)")
+    insight_query = st.text_input("Enter Ticker for Deep Dive (e.g. AAPL, MSFT)", "AAPL")
+    
+    if insight_query:
+        ticker = insight_query.upper()
+        # Fetch deeper insights (Insider/Options)
+        with st.spinner(f"Pulling deep insights for {ticker}..."):
+            extra_data = get_insider_options_data(ticker)
+            
+            # Deep Dive Sections
+            try:
+                f_info = yf.Ticker(ticker).info
+                score, flags = calculate_fundamental_score(f_info)
+                
+                f1, f2, f3 = st.columns(3)
+                with f1:
+                    st.markdown("**Fundamentals (Norn-Style)**")
+                    st.write(f"**Health Score:** {score}/3")
+                    for f in flags:
+                        st.write(f)
+                        
+                with f2:
+                    st.markdown("**SEC Insider Trading**")
+                    if not extra_data["insider"].empty:
+                        # Cleanup columns if they exist
+                        idf = extra_data["insider"].copy()
+                        cols = [c for c in ['Start Date', 'Insider', 'Position', 'Transaction', 'Value'] if c in idf.columns]
+                        if cols:
+                            st.dataframe(idf[cols].head(5), hide_index=True, use_container_width=True)
+                        else:
+                            st.dataframe(idf.head(5), hide_index=True, use_container_width=True)
+                    else:
+                        st.info("No recent insider transactions filed.")
+                        
+                with f3:
+                    st.markdown("**Options Chain (OpenBB-Style)**")
+                    if extra_data["options"]:
+                        st.write(f"**Nearest Expiry:** {extra_data['options']['date']}")
+                        opt_tabs = st.tabs(["Calls", "Puts"])
+                        with opt_tabs[0]:
+                            st.dataframe(extra_data["options"]["calls"], hide_index=True, use_container_width=True)
+                        with opt_tabs[1]:
+                            st.dataframe(extra_data["options"]["puts"], hide_index=True, use_container_width=True)
+                    else:
+                        st.info("No options chain data available.")
+            except Exception as e:
+                st.error("Error loading deep insights.")
+
+with tab4:
     st.subheader("🇺🇸 Nancy Pelosi Trade Tracker")
     st.markdown("### ⚠️ DATA LAG NOTICE")
     st.warning("By law (The STOCK Act), members of Congress have up to 45 days to report their trades. The data below represents the most recent **publicly disclosed filings**, but it is not real-time to the day the trade was executed.")
@@ -362,7 +326,7 @@ with tab3:
         else:
             st.error("Failed to scrape trades. The source website might be temporarily blocking automated requests.")
 
-with tab4:
+with tab5:
     st.subheader("📈 ETF Performance Tracking")
     st.markdown("Track the performance of **NANC** (Unusual Whales Subversive Democratic Trading ETF) against the broader market (**SPY**, **QQQ**, & **VOO**).")
     

@@ -110,6 +110,56 @@ def get_chart_data(ticker_sym, period="1y"):
         pass
     return pd.DataFrame()
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_insider_options_data(ticker_sym):
+    # Consolidates the calls to avoid multiple yf instantiations
+    result = {"insider": pd.DataFrame(), "options": None}
+    try:
+        stock = yf.Ticker(ticker_sym)
+        # Fetch Insider Transactions
+        insider = stock.insider_transactions
+        if insider is not None and not insider.empty:
+            result["insider"] = insider.head(10) # Top 10 recent
+            
+        # Fetch nearest Options Chain
+        opts = stock.options
+        if opts and len(opts) > 0:
+            nearest_date = opts[0]
+            chain = stock.option_chain(nearest_date)
+            # Summarize options
+            calls = chain.calls[['strike', 'volume', 'openInterest']].head(10)
+            puts = chain.puts[['strike', 'volume', 'openInterest']].head(10)
+            result["options"] = {"date": nearest_date, "calls": calls, "puts": puts}
+    except Exception as e:
+        pass
+    return result
+
+def calculate_fundamental_score(info):
+    score = 0
+    flags = []
+    
+    # Simple Norn-style Fundamental Scoring
+    roe = info.get('returnOnEquity', 0)
+    if roe and roe > 0.15:
+        score += 1
+        flags.append("🟢 Strong ROE (>15%)")
+    elif roe and roe < 0:
+        flags.append("🔴 Negative ROE")
+        
+    debt_eq = info.get('debtToEquity', 0)
+    if debt_eq and debt_eq < 100:
+        score += 1
+        flags.append("🟢 Low Debt (<100%)")
+    elif debt_eq and debt_eq > 200:
+        flags.append("🔴 High Debt Burden")
+        
+    margin = info.get('operatingMargins', 0)
+    if margin and margin > 0.10:
+        score += 1
+        flags.append("🟢 Healthy Operating Margin")
+        
+    return score, flags
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_pelosi_trades():
     try:
@@ -210,6 +260,9 @@ with tab2:
                     st.session_state[key_name] = "1Y"
                 fetch_period = period_options[st.session_state[key_name]]
                 
+                # Fetch deeper insights (Insider/Options)
+                extra_data = get_insider_options_data(ticker)
+                
                 # Render Chart
                 chart_data = get_chart_data(ticker, period=fetch_period)
                 if not chart_data.empty:
@@ -252,6 +305,50 @@ with tab2:
                             key=key_name,
                             label_visibility="collapsed"
                         )
+                
+                st.divider()
+                
+                # Deep Dive Sections
+                st.markdown(f"### 🧬 Deep Insights: {ticker}")
+                
+                # We calculate fundamentals dynamically using the info pulled during the screener
+                try:
+                    f_info = yf.Ticker(ticker).info
+                    score, flags = calculate_fundamental_score(f_info)
+                    
+                    f1, f2, f3 = st.columns(3)
+                    with f1:
+                        st.markdown("**Fundamentals (Norn-Style)**")
+                        st.write(f"**Health Score:** {score}/3")
+                        for f in flags:
+                            st.write(f)
+                            
+                    with f2:
+                        st.markdown("**SEC Insider Trading**")
+                        if not extra_data["insider"].empty:
+                            # Cleanup columns if they exist
+                            idf = extra_data["insider"].copy()
+                            cols = [c for c in ['Start Date', 'Insider', 'Position', 'Transaction', 'Value'] if c in idf.columns]
+                            if cols:
+                                st.dataframe(idf[cols].head(5), hide_index=True, use_container_width=True)
+                            else:
+                                st.dataframe(idf.head(5), hide_index=True, use_container_width=True)
+                        else:
+                            st.info("No recent insider transactions filed.")
+                            
+                    with f3:
+                        st.markdown("**Options Chain (OpenBB-Style)**")
+                        if extra_data["options"]:
+                            st.write(f"**Nearest Expiry:** {extra_data['options']['date']}")
+                            opt_tabs = st.tabs(["Calls", "Puts"])
+                            with opt_tabs[0]:
+                                st.dataframe(extra_data["options"]["calls"], hide_index=True, use_container_width=True)
+                            with opt_tabs[1]:
+                                st.dataframe(extra_data["options"]["puts"], hide_index=True, use_container_width=True)
+                        else:
+                            st.info("No options chain data available.")
+                except Exception as e:
+                    st.error("Error loading deep insights.")
 
 with tab3:
     st.subheader("🇺🇸 Nancy Pelosi Trade Tracker")

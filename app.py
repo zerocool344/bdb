@@ -111,25 +111,14 @@ def get_chart_data(ticker_sym, period="1y"):
     return pd.DataFrame()
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def get_insider_options_data(ticker_sym):
-    # Consolidates the calls to avoid multiple yf instantiations
-    result = {"insider": pd.DataFrame(), "options": None}
+def get_insider_data(ticker_sym):
+    result = {"insider": pd.DataFrame()}
     try:
         stock = yf.Ticker(ticker_sym)
         # Fetch Insider Transactions
         insider = stock.insider_transactions
         if insider is not None and not insider.empty:
             result["insider"] = insider.head(10) # Top 10 recent
-            
-        # Fetch nearest Options Chain
-        opts = stock.options
-        if opts and len(opts) > 0:
-            nearest_date = opts[0]
-            chain = stock.option_chain(nearest_date)
-            # Summarize options
-            calls = chain.calls[['strike', 'volume', 'openInterest']].head(10)
-            puts = chain.puts[['strike', 'volume', 'openInterest']].head(10)
-            result["options"] = {"date": nearest_date, "calls": calls, "puts": puts}
     except Exception as e:
         pass
     return result
@@ -210,7 +199,7 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🧬 Deep Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🧬 Deep Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks", "📚 Master Lists"])
 
 with tab1:
     st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
@@ -307,21 +296,21 @@ with tab2:
                     st.error("Error loading chart.")
 
 with tab3:
-    st.subheader("🧬 Deep Insights (Fundamentals, Insider, Options)")
+    st.subheader("🧬 Deep Insights & Alternative Data")
     insight_query = st.text_input("Enter Ticker for Deep Dive (e.g. AAPL, MSFT)", "AAPL")
     
     if insight_query:
         ticker = insight_query.upper()
-        # Fetch deeper insights (Insider/Options)
+        # Fetch deeper insights (Insider only now)
         with st.spinner(f"Pulling deep insights for {ticker}..."):
-            extra_data = get_insider_options_data(ticker)
+            extra_data = get_insider_data(ticker)
             
             # Deep Dive Sections
             try:
                 f_info = yf.Ticker(ticker).info
                 score, flags = calculate_fundamental_score(f_info)
                 
-                f1, f2, f3 = st.columns(3)
+                f1, f2, f3 = st.columns([1, 1.5, 1])
                 with f1:
                     st.markdown("**Fundamentals (Norn-Style)**")
                     st.write(f"**Health Score:** {score}/3")
@@ -342,16 +331,11 @@ with tab3:
                         st.info("No recent insider transactions filed.")
                         
                 with f3:
-                    st.markdown("**Options Chain (OpenBB-Style)**")
-                    if extra_data["options"]:
-                        st.write(f"**Nearest Expiry:** {extra_data['options']['date']}")
-                        opt_tabs = st.tabs(["Calls", "Puts"])
-                        with opt_tabs[0]:
-                            st.dataframe(extra_data["options"]["calls"], hide_index=True, use_container_width=True)
-                        with opt_tabs[1]:
-                            st.dataframe(extra_data["options"]["puts"], hide_index=True, use_container_width=True)
-                    else:
-                        st.info("No options chain data available.")
+                    st.markdown("**Alternative Data Links**")
+                    st.markdown(f"Use the following open-source platforms to dive deeper into {ticker}'s alternative data points:")
+                    st.link_button(f"🔎 View {ticker} on Stocksera (Retail Sentiment)", f"https://stocksera.pythonanywhere.com/ticker/?quote={ticker}", use_container_width=True)
+                    st.link_button(f"🌍 View {ticker} on OpenBB (Macro & Terminals)", "https://openbb.co/", use_container_width=True)
+                    
             except Exception as e:
                 st.error("Error loading deep insights.")
 
@@ -424,3 +408,23 @@ with tab5:
                 )
         except Exception as e:
             st.error(f"Could not load ETF data: {e}")
+
+with tab6:
+    st.subheader("📚 Curated Quant Resources & Master Lists")
+    st.markdown("Explore the best open-source quantitative finance and alternative data stacks available on GitHub.")
+    
+    st.markdown("""
+    ### 1. Alternative Data & Sentiment
+    *   **[Stocksera](https://github.com/guanquann/Stocksera):** An open-source aggregator tracking Reddit sentiment (WallStreetBets), Failures to Deliver (FTDs), and dark pool volumes.
+    *   **[Quiver Quantitative](https://github.com/Quiver-Quantitative):** While mostly known for their API, their GitHub shares open-source scripts tracking corporate lobbying, Wikipedia views, and Congress trades.
+    
+    ### 2. The "Ultimate" Open-Source Stack
+    *   **[OpenBB Terminal](https://github.com/OpenBB-finance/OpenBBTerminal):** The absolute king of open-source finance. An entirely free alternative to the Bloomberg Terminal aggregating data from dozens of sources (crypto, macro, fundamentals) into one Python SDK.
+    
+    ### 3. Systematic Screeners
+    *   **[Norn-StockScreener](https://github.com/zmcx16/Norn-StockScreener):** A robust screener that incorporates advanced fundamental flag modules to detect "earnings manipulation" or highlight pristine balance sheets.
+    *   **[Insider-Trading-Analyzer](https://github.com/wescules/insider-trading-analyzer):** A specialized repository that scans SEC Form 4 filings to detect "cluster buys" by multiple executives, providing strong market timing signals.
+    
+    ### 4. The Master List
+    *   **[Awesome Quant](https://github.com/wilsonfreitas/awesome-quant):** A continuously updated, master-curated list of hundreds of the best open-source libraries for algorithmic trading, backtesting, and data extraction. If you want to dive down the rabbit hole, start here.
+    """)

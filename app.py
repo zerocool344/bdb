@@ -260,10 +260,51 @@ with tab2:
                     st.session_state[key_name] = "1Y"
                 fetch_period = period_options[st.session_state[key_name]]
                 
-                            label_visibility="collapsed"
+                # Render Chart
+                try:
+                    chart_data = get_chart_data(ticker, period=fetch_period)
+                    if not chart_data.empty:
+                        st.markdown(f"**{st.session_state[key_name]} Price Trend**")
+                        
+                        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                                            vertical_spacing=0.03, row_width=[0.2, 0.7])
+                        
+                        fig.add_trace(go.Candlestick(x=chart_data.index,
+                                        open=chart_data['Open'],
+                                        high=chart_data['High'],
+                                        low=chart_data['Low'],
+                                        close=chart_data['Close'],
+                                        name="Price"), row=1, col=1)
+                        
+                        colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
+                        fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
+                        
+                        fig.update_layout(
+                            xaxis_rangeslider_visible=False,
+                            height=400,
+                            margin=dict(l=0, r=0, t=10, b=0),
+                            showlegend=False,
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            paper_bgcolor="rgba(0,0,0,0)"
                         )
+                        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Timeframe Toggle (Centered below graph)
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        tc1, tc2, tc3 = st.columns([1, 4, 1])
+                        with tc2:
+                            st.radio(
+                                f"Select Timeframe for {ticker}",
+                                options=list(period_options.keys()),
+                                horizontal=True,
+                                key=key_name,
+                                label_visibility="collapsed"
+                            )
                 except Exception as e:
-                    st.error("Error loading interactive insights.")
+                    st.error("Error loading chart.")
 
 with tab3:
     st.subheader("🧬 Deep Insights (Fundamentals, Insider, Options)")

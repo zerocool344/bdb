@@ -99,20 +99,13 @@ def render_tradingagents_desk(watchlist: List[str]):
         
         with c1:
             # Check if user selected from other tab
-            curr_selected = st.session_state["selected_ta_ticker"]
-            options_list = list(dict.fromkeys([curr_selected] + watchlist + ["CUSTOM"]))
+            curr_selected = st.session_state.get("selected_ta_ticker", watchlist[0] if watchlist else "NVDA")
             
-            selected_option = st.selectbox(
-                "🎯 Select Target Asset",
-                options=options_list,
-                index=options_list.index(curr_selected) if curr_selected in options_list else 0,
-                help="Choose a ticker from your master watchlist or specify a custom symbol"
-            )
-            
-            if selected_option == "CUSTOM":
-                target_ticker = st.text_input("Enter Ticker Symbol", value="AAPL").strip().upper()
-            else:
-                target_ticker = selected_option
+            target_ticker = st.text_input(
+                "🎯 Enter Target Asset Ticker",
+                value=curr_selected,
+                help="Type any ticker symbol to analyze (e.g., AAPL, TSLA, NVDA)"
+            ).strip().upper()
                 
             st.session_state["selected_ta_ticker"] = target_ticker
 

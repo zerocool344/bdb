@@ -118,8 +118,8 @@ with col_neon:
     with nc2:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄", help="Refresh all live data", use_container_width=True):
-            from datetime import datetime
-            st.session_state["last_refreshed"] = datetime.now().strftime("%b %d, %Y • %I:%M %p")
+            from datetime import datetime, timezone, timedelta
+            st.session_state["last_refreshed"] = datetime.now(timezone(timedelta(hours=-6))).strftime("%b %d, %Y • %I:%M %p CST")
             st.cache_data.clear()
             st.rerun()
 
@@ -283,9 +283,10 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Track last refresh timestamp
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+CST = timezone(timedelta(hours=-6))
 if "last_refreshed" not in st.session_state:
-    st.session_state["last_refreshed"] = datetime.now().strftime("%b %d, %Y • %I:%M %p")
+    st.session_state["last_refreshed"] = datetime.now(CST).strftime("%b %d, %Y • %I:%M %p CST")
 
 # Creator badge + Last refreshed strip
 st.markdown(f"""

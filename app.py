@@ -53,6 +53,7 @@ st.markdown("""
     /* Header & typography tightening */
     h1 { color: #1E293B !important; margin-top: 0 !important; margin-bottom: 2px !important; padding-bottom: 0 !important; }
     h2, h3 { color: #334155 !important; letter-spacing: 0.3px; }
+    [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] p { margin-bottom: 0 !important; }
     
     /* Button styling */
     .stButton > button[kind="primary"] {
@@ -121,7 +122,7 @@ WATCHLIST = [
     "STX", "LNG", "U", "AAPL", "NVDA", "META"
 ]
 
-col_logo, col_title, col_actions = st.columns([1, 6, 5])
+col_logo, col_title, col_actions = st.columns([1, 6, 5], vertical_alignment="bottom")
 with col_logo:
     st.markdown("""
         <div class="logo-cat-wrapper">
@@ -135,11 +136,10 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_actions:
-    # Use a negative top margin container to pull everything up if needed, but centering the columns fixes the button alignment
-    ac1, ac2 = st.columns([1.1, 1], vertical_alignment="center")
+    ac1, ac2 = st.columns([1.1, 1], vertical_alignment="bottom")
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: center; width: 100%; height: 100%; margin-top: 2px;">
+            <div style="display: flex; justify-content: flex-end; align-items: flex-end; width: 100%; height: 38px; margin-bottom: 4px;">
                 <div class="sign-wrapper-1">
                     <div class="cat-climber-1">🐱</div>
                     <div class="neon-sign-1">

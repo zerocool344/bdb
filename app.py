@@ -278,15 +278,22 @@ with tab1:
                                 fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                                                     vertical_spacing=0.03, row_width=[0.2, 0.7])
                                 
-                                fig.add_trace(go.Candlestick(x=chart_data.index,
-                                                open=chart_data['Open'],
-                                                high=chart_data['High'],
-                                                low=chart_data['Low'],
-                                                close=chart_data['Close'],
-                                                name="Price"), row=1, col=1)
+                                fig.add_trace(go.Scatter(
+                                    x=chart_data.index,
+                                    y=chart_data['Close'],
+                                    mode='lines',
+                                    name="Price",
+                                    line=dict(color='#00E5FF', width=2),
+                                    fill='tozeroy',
+                                    fillcolor='rgba(0, 229, 255, 0.1)'
+                                ), row=1, col=1)
                                 
-                                colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
-                                fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
+                                fig.add_trace(go.Bar(
+                                    x=chart_data.index, 
+                                    y=chart_data['Volume'], 
+                                    marker_color='rgba(128, 128, 128, 0.4)', 
+                                    name="Volume"
+                                ), row=2, col=1)
                                 
                                 fig.update_layout(
                                     xaxis_rangeslider_visible=False,

@@ -182,10 +182,10 @@ def run_screener(watchlist):
             trailing_pe = info.get("trailingPE")
             
             true_pe = None
-            if ev and ev > 0:
-                if net_income and net_income > 0:
+            if isinstance(ev, (int, float)) and ev > 0:
+                if isinstance(net_income, (int, float)) and net_income > 0:
                     true_pe = round(ev / net_income, 2)
-                elif market_cap and trailing_pe and trailing_pe > 0:
+                elif isinstance(market_cap, (int, float)) and isinstance(trailing_pe, (int, float)) and trailing_pe > 0:
                     # Implied earnings from market cap and trailing PE
                     implied_earnings = market_cap / trailing_pe
                     if implied_earnings > 0:
@@ -380,6 +380,11 @@ with tab1:
             st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
             watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
             st.dataframe(watch_df, use_container_width=True)
+            
+            error_df = df[df['List'] == 'ERROR'].drop(columns=['List']).reset_index(drop=True)
+            if not error_df.empty:
+                st.error("⚠️ The following assets failed to pull live data (Rate limited or invalid ticker):")
+                st.dataframe(error_df, use_container_width=True)
         
 
     with side_col:

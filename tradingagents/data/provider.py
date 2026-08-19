@@ -93,6 +93,10 @@ class FinancialDataProvider:
         """Calculates RSI, MACD, Bollinger Bands, SMAs, ATR, and momentum indicators."""
         df = hist.copy()
         
+        # Flatten MultiIndex columns (yfinance breaking change workaround)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+            
         # Ensure standard column names
         for col in ["Close", "High", "Low", "Open", "Volume"]:
             if col not in df.columns:

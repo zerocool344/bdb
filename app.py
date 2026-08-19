@@ -101,24 +101,24 @@ WATCHLIST = [
 ]
 
 
-col_logo, col_title, col_neon = st.columns([1, 7, 4])
+col_logo, col_title, col_actions = st.columns([1, 6, 5])
 with col_logo:
     st.image("logo.png", use_container_width=True)
 with col_title:
     st.title("The Tendie Tracker")
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
-with col_neon:
-    nc1, nc2 = st.columns([3, 1])
-    with nc1:
+with col_actions:
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    ac1, ac2 = st.columns([3, 2])
+    with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: flex-start; margin-top: 15px;">
+            <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
                 <div class="neon-sign">WE LIKE THE STOCK!</div>
             </div>
         """, unsafe_allow_html=True)
-    with nc2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄", help="Refresh all live data", use_container_width=True):
+    with ac2:
+        if st.button("🔄 Refresh Data", help="Refresh all live market data", use_container_width=True):
             from datetime import datetime
             try:
                 from zoneinfo import ZoneInfo

@@ -50,10 +50,9 @@ st.markdown("""
     /* Dataframe clean styling */
     .stDataFrame { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     
-    /* Header & typography tightening */
-    h1 { color: #1E293B !important; margin-top: 0 !important; margin-bottom: 2px !important; padding-bottom: 0 !important; }
+    /* Subheader styling */
+    h1 { color: #1E293B !important; }
     h2, h3 { color: #334155 !important; letter-spacing: 0.3px; }
-    [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] p { margin-bottom: 0 !important; }
     
     /* Button styling */
     .stButton > button[kind="primary"] {
@@ -122,7 +121,7 @@ WATCHLIST = [
     "STX", "LNG", "U", "AAPL", "NVDA", "META"
 ]
 
-col_logo, col_title, col_actions = st.columns([1, 6, 5], vertical_alignment="bottom")
+col_logo, col_title, col_actions = st.columns([1, 6, 5])
 with col_logo:
     st.markdown("""
         <div class="logo-cat-wrapper">
@@ -136,10 +135,11 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_actions:
-    ac1, ac2 = st.columns([1.1, 1], vertical_alignment="bottom")
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    ac1, ac2 = st.columns([3, 2])
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: flex-end; width: 100%; height: 38px; margin-bottom: 4px;">
+            <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
                 <div class="sign-wrapper-1">
                     <div class="cat-climber-1">🐱</div>
                     <div class="neon-sign-1">
@@ -335,10 +335,9 @@ if "last_refreshed" not in st.session_state:
 # Creator badge + Last refreshed strip
 st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; 
-                padding: 6px 14px; margin: -28px 0 14px 0; border-radius: 6px;
+                padding: 6px 12px; margin: 4px 0 12px 0; border-radius: 6px;
                 background: linear-gradient(90deg, rgba(59,130,160,0.08), rgba(245,247,250,0)); 
-                border: 1px solid #E2E8F0;
-                position: relative; z-index: 5;">
+                border: 1px solid #E2E8F0;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="background: #3B82A0; color: #FFFFFF; font-weight: 700; font-size: 0.75rem; 
                          padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;">BUILT BY ZEROCOOL</span>

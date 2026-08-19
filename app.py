@@ -221,10 +221,9 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab_tradingagents, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
     "Live Overview (Consensus)",
-    "🤖 TradingAgents Desk",
-    "🧬 Deep Insights",
+    "🧬 TradingAgents Desk",
     "🇺🇸 Pelosi Tracker",
     "📈 ETF Benchmarks",
     "📚 Master Lists"
@@ -354,50 +353,6 @@ with tab1:
         
 with tab_tradingagents:
     render_tradingagents_desk(WATCHLIST)
-
-with tab3:
-    st.subheader("🧬 Deep Insights & Alternative Data")
-    insight_query = st.text_input("Enter Ticker for Deep Dive (e.g. AAPL, MSFT)", "AAPL")
-    
-    if insight_query:
-        ticker = insight_query.upper()
-        # Fetch deeper insights (Insider only now)
-        with st.spinner(f"Pulling deep insights for {ticker}..."):
-            extra_data = get_insider_data(ticker)
-            
-            # Deep Dive Sections
-            try:
-                f_info = yf.Ticker(ticker).info
-                score, flags = calculate_fundamental_score(f_info)
-                
-                f1, f2, f3 = st.columns([1, 1.5, 1])
-                with f1:
-                    st.markdown("**Fundamentals (Norn-Style)**")
-                    st.write(f"**Health Score:** {score}/3")
-                    for f in flags:
-                        st.write(f)
-                        
-                with f2:
-                    st.markdown("**SEC Insider Trading**")
-                    if not extra_data["insider"].empty:
-                        # Cleanup columns if they exist
-                        idf = extra_data["insider"].copy()
-                        cols = [c for c in ['Start Date', 'Insider', 'Position', 'Transaction', 'Value'] if c in idf.columns]
-                        if cols:
-                            st.dataframe(idf[cols].head(5), hide_index=True, use_container_width=True)
-                        else:
-                            st.dataframe(idf.head(5), hide_index=True, use_container_width=True)
-                    else:
-                        st.info("No recent insider transactions filed.")
-                        
-                with f3:
-                    st.markdown("**Alternative Data Links**")
-                    st.markdown(f"Use the following open-source platforms to dive deeper into {ticker}'s alternative data points:")
-                    st.link_button(f"🔎 View {ticker} on Stocksera (Retail Sentiment)", f"https://stocksera.pythonanywhere.com/ticker/?quote={ticker}", use_container_width=True)
-                    st.link_button(f"🌍 View {ticker} on OpenBB (Macro & Terminals)", "https://openbb.co/", use_container_width=True)
-                    
-            except Exception as e:
-                st.error("Error loading deep insights.")
 
 with tab4:
     st.subheader("🇺🇸 Nancy Pelosi Trade Tracker")

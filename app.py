@@ -50,8 +50,8 @@ st.markdown("""
     /* Dataframe clean styling */
     .stDataFrame { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     
-    /* Subheader styling */
-    h1 { color: #1E293B !important; }
+    /* Header & typography tightening */
+    h1 { color: #1E293B !important; margin-top: 0 !important; margin-bottom: 2px !important; padding-bottom: 0 !important; }
     h2, h3 { color: #334155 !important; letter-spacing: 0.3px; }
     
     /* Button styling */
@@ -135,11 +135,10 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_actions:
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-    ac1, ac2 = st.columns([3, 2])
+    ac1, ac2 = st.columns([3, 2], vertical_alignment="bottom")
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
+            <div style="display: flex; justify-content: flex-end; align-items: flex-end; height: 38px; margin-bottom: 2px;">
                 <div class="sign-wrapper-1">
                     <div class="cat-climber-1">🐱</div>
                     <div class="neon-sign-1">
@@ -335,7 +334,7 @@ if "last_refreshed" not in st.session_state:
 # Creator badge + Last refreshed strip
 st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; 
-                padding: 6px 12px; margin: 4px 0 12px 0; border-radius: 6px;
+                padding: 6px 14px; margin: 0px 0 14px 0; border-radius: 6px;
                 background: linear-gradient(90deg, rgba(59,130,160,0.08), rgba(245,247,250,0)); 
                 border: 1px solid #E2E8F0;">
         <div style="display: flex; align-items: center; gap: 10px;">

@@ -26,6 +26,32 @@ with col_logo:
     st.image("logo.png", use_container_width=True)
 with col_title:
     st.title("The Tendie Tracker")
+    
+    # CSS for flashing neon LED sign
+    st.markdown("""
+        <style>
+        @keyframes neon-flash {
+            0%, 100% { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 70px #ff00ff, 0 0 80px #ff00ff, 0 0 100px #ff00ff; color: #fff; }
+            50% { text-shadow: 0 0 2px #ff00ff, 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #ffa6ff; }
+        }
+        .neon-sign {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            animation: neon-flash 1.5s infinite alternate;
+            padding: 10px;
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 0 10px #ff00ff, inset 0 0 10px #ff00ff;
+            margin-bottom: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        </style>
+        <div class="neon-sign">WE LIKE THE STOCK!</div>
+    """, unsafe_allow_html=True)
+    
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 @st.cache_data(ttl=3600, show_spinner=False)

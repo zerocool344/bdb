@@ -136,13 +136,13 @@ with col_title:
 
 with col_actions:
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-    ac1, ac2 = st.columns([1, 1])
+    ac1, ac2 = st.columns([1.3, 1])
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: center; align-items: center; height: 38px; width: 100%;">
-                <div class="sign-wrapper-1" style="width: 100%;">
+            <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
+                <div class="sign-wrapper-1">
                     <div class="cat-climber-1">🐱</div>
-                    <div class="neon-sign-1" style="width: 100%; justify-content: center;">
+                    <div class="neon-sign-1">
                         <span class="led-dot"></span> WE LIKE THE STOCK!
                     </div>
                 </div>

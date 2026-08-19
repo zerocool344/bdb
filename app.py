@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 import yfinance as yf
 import time
@@ -12,6 +13,9 @@ from tradingagents import TradingAgentsGraph, DEFAULT_CONFIG
 from tradingagents.ui import render_tradingagents_desk, create_radar_chart
 
 st.set_page_config(page_title="The Tendie Tracker", layout="wide", page_icon="logo.png")
+
+# Auto-refresh the page every 10 minutes (600,000 ms)
+st_autorefresh(interval=600_000, key="data_autorefresh")
 
 # ── Global Soft Gray Institutional Theme ──
 st.markdown("""
@@ -148,7 +152,7 @@ with col_actions:
             st.rerun()
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=595, show_spinner=False)
 def run_screener(watchlist):
     results = []
     

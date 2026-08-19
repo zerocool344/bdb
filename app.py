@@ -218,21 +218,7 @@ with tab1:
             watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
             st.dataframe(watch_df, use_container_width=True)
         
-            st.markdown("---")
-            st.subheader("🤖 Quick Launch Multi-Agent Committee")
-            qc1, qc2 = st.columns([3, 1])
-            with qc1:
-                quick_ticker = st.selectbox(
-                    "Select stock from screener for TradingAgents AI Committee",
-                    options=WATCHLIST,
-                    key="quick_launch_tab1"
-                )
-            with qc2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🚀 Analyze on TradingAgents Desk", key="btn_quick_launch_tab1", use_container_width=True):
-                    st.session_state["selected_ta_ticker"] = quick_ticker
-                    st.info(f"✅ Queued **{quick_ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to run the AI Committee deliberation.")
-        
+
     with side_col:
             st.subheader("🔍 Stock Lookup")
             search_query = st.text_input("Search by Ticker or Name (e.g. MSFT or Apple)", "")

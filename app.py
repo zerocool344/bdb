@@ -13,6 +13,77 @@ from tradingagents.ui import render_tradingagents_desk, create_radar_chart
 
 st.set_page_config(page_title="The Tendie Tracker", layout="wide", page_icon="logo.png")
 
+# ── Global Trading Terminal CSS ──
+st.markdown("""
+<style>
+    /* Dark trading terminal background */
+    .stApp { background-color: #0E1117; }
+    
+    /* Tab styling - cyan underline on active */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid #1a2332; }
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        color: #8899aa;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 10px 18px;
+        border-radius: 6px 6px 0 0;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #00E5FF !important;
+        border-bottom: 3px solid #00E5FF;
+        background-color: rgba(0, 229, 255, 0.05);
+    }
+    .stTabs [data-baseweb="tab"]:hover { color: #ffffff; background-color: rgba(255,255,255,0.04); }
+    
+    /* Metric cards with subtle glow */
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #111927 0%, #0d1520 100%);
+        border: 1px solid #1a2a3a;
+        border-radius: 8px;
+        padding: 12px 16px;
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.06);
+    }
+    [data-testid="stMetricLabel"] { color: #8899aa !important; font-size: 0.8rem; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; font-weight: 700; }
+    [data-testid="stMetricDelta"] svg { display: none; }
+    
+    /* Dataframe dark striping */
+    .stDataFrame { border-radius: 8px; overflow: hidden; }
+    
+    /* Subheader styling */
+    h2, h3 { color: #e0e8f0 !important; letter-spacing: 0.5px; }
+    
+    /* Button styling */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(90deg, #00E5FF 0%, #00B8D4 100%) !important;
+        color: #0E1117 !important;
+        font-weight: 700;
+        border: none;
+    }
+    .stButton > button { border: 1px solid #1a2a3a; }
+    
+    /* Neon sign */
+    @keyframes neon-flash {
+        0%, 100% { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 70px #ff00ff; color: #fff; }
+        50% { text-shadow: 0 0 2px #ff00ff, 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #ffa6ff; }
+    }
+    .neon-sign {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 22px;
+        font-weight: bold;
+        color: #fff;
+        animation: neon-flash 1.5s infinite alternate;
+        padding: 8px 14px;
+        border: 2px solid #ff00ff;
+        border-radius: 10px;
+        display: inline-block;
+        box-shadow: 0 0 10px #ff00ff, inset 0 0 10px #ff00ff;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Master Watchlist
 WATCHLIST = [
     "GOOGL", "CVS", "AMZN", "MSFT", "JPM", 
@@ -29,31 +100,19 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_neon:
-    # CSS for flashing neon LED sign
-    st.markdown("""
-        <style>
-        @keyframes neon-flash {
-            0%, 100% { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 70px #ff00ff, 0 0 80px #ff00ff, 0 0 100px #ff00ff; color: #fff; }
-            50% { text-shadow: 0 0 2px #ff00ff, 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #ffa6ff; }
-        }
-        .neon-sign {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            animation: neon-flash 1.5s infinite alternate;
-            padding: 10px;
-            border: 2px solid #ff00ff;
-            border-radius: 10px;
-            display: inline-block;
-            box-shadow: 0 0 10px #ff00ff, inset 0 0 10px #ff00ff;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-        </style>
-        <div style="display: flex; justify-content: flex-end; align-items: flex-start; margin-top: 15px;">
-            <div class="neon-sign">WE LIKE THE STOCK!</div>
-        </div>
-    """, unsafe_allow_html=True)
+    nc1, nc2 = st.columns([3, 1])
+    with nc1:
+        st.markdown("""
+            <div style="display: flex; justify-content: flex-end; align-items: flex-start; margin-top: 15px;">
+                <div class="neon-sign">WE LIKE THE STOCK!</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with nc2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🔄", help="Refresh all live data", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def run_screener(watchlist):
@@ -209,24 +268,17 @@ def get_pelosi_trades():
     except Exception as e:
         return pd.DataFrame()
 
-# Header with Refresh button
-col1, col2 = st.columns([8, 1])
-with col2:
-    if st.button("🔄 Refresh Live Data", help="Clears cache and screens Yahoo Finance live"):
-        st.cache_data.clear()
-        st.rerun()
-
 # Run the screener (will use cache unless refreshed)
 with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
 tab1, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
-    "Live Overview (Consensus)",
-    "🧬 TradingAgents Desk",
-    "🇺🇸 Pelosi Tracker",
-    "📈 ETF Benchmarks",
-    "📚 Master Lists"
+    "📊 Overview",
+    "🧬 AI Desk",
+    "🇺🇸 Pelosi",
+    "📈 ETFs",
+    "📚 Resources"
 ])
 
 with tab1:
@@ -390,7 +442,7 @@ with tab5:
                     
             if data_dict:
                 fig = go.Figure()
-                colors = {"NANC": "#1f77b4", "SPY": "#2ca02c", "QQQ": "#ff7f0e", "VOO": "#d62728"}
+                colors = {"NANC": "#00E5FF", "SPY": "#FFB74D", "QQQ": "#CE93D8", "VOO": "#B0BEC5"}
                 
                 for t, df_t in data_dict.items():
                     fig.add_trace(go.Scatter(x=df_t.index, y=df_t['Return'], mode='lines', name=t, line=dict(color=colors.get(t))))

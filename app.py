@@ -84,28 +84,6 @@ st.markdown("""
     .stTextInput input { background: #FFFFFF; border: 1px solid #CBD5E1; color: #1E293B; }
     .stSelectbox > div > div { background: #FFFFFF; }
     
-    /* ── Animated Climbing Kitty on Stock Logo ── */
-    .logo-cat-wrapper {
-        position: relative;
-        height: 0px;
-        z-index: 10;
-    }
-    .climbing-kitty-logo {
-        position: absolute;
-        top: -14px;
-        left: 8px;
-        font-size: 18px;
-        animation: kittyClimbLogo 4.5s infinite ease-in-out;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-    }
-    @keyframes kittyClimbLogo {
-        0% { transform: translateY(18px) rotate(-15deg); opacity: 0.2; }
-        25% { transform: translateY(-2px) rotate(-5deg); opacity: 1; }
-        50% { transform: translateY(-10px) rotate(8deg); }
-        75% { transform: translateY(-6px) rotate(-4deg); }
-        100% { transform: translateY(18px) rotate(-15deg); opacity: 0.2; }
-    }
-
     /* ── Dot-Matrix LED Board + Climbing Kitty ── */
     .sign-wrapper-1 { position: relative; display: inline-flex; align-items: center; }
     .cat-climber-1 {
@@ -136,11 +114,6 @@ WATCHLIST = [
 
 col_logo, col_title, col_actions = st.columns([1, 6, 5])
 with col_logo:
-    st.markdown("""
-        <div class="logo-cat-wrapper">
-            <div class="climbing-kitty-logo">🐱🐾</div>
-        </div>
-    """, unsafe_allow_html=True)
     st.image("logo.png", use_container_width=True)
 
 with col_title:

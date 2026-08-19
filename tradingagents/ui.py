@@ -315,7 +315,7 @@ def render_tradingagents_desk(watchlist: List[str]):
                                     <div style="font-weight: 700; color: #26a69a; margin-bottom: 6px;">
                                         {avatar} {speaker} — Target: ${turn.get('upside_target_price', target_price)} (+{turn.get('upside_potential_pct', 0)}%) | Conviction: {turn.get('conviction', 75)}%
                                     </div>
-                                    <div style="color: #eceff1; line-height: 1.5;">{dialogue}</div>
+                                    <div style="color: #334155; line-height: 1.5;">{dialogue}</div>
                                 </div>
                                 """,
                                 unsafe_allow_html=True
@@ -328,7 +328,7 @@ def render_tradingagents_desk(watchlist: List[str]):
                                     <div style="font-weight: 700; color: #ef5350; margin-bottom: 6px;">
                                         {avatar} {speaker} — Downside: ${turn.get('downside_target_price', stop_loss)} ({turn.get('downside_potential_pct', 0)}%) | Skepticism: {turn.get('conviction', 70)}%
                                     </div>
-                                    <div style="color: #eceff1; line-height: 1.5;">{dialogue}</div>
+                                    <div style="color: #334155; line-height: 1.5;">{dialogue}</div>
                                 </div>
                                 """,
                                 unsafe_allow_html=True

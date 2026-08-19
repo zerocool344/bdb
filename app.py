@@ -61,8 +61,21 @@ st.markdown("""
         font-weight: 700;
         border: none;
     }
-    .stButton > button { border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; }
-    .stButton > button:hover { border-color: #3B82A0; color: #1E3A5F; }
+    .stButton > button { 
+        border: 1px solid #CBD5E1; 
+        background: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%); 
+        color: #334155; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .stButton > button:hover { 
+        border-color: #94A3B8; 
+        background: #FFFFFF; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+        color: #0F172A; 
+        transform: translateY(-1px);
+    }
     
     /* Container borders */
     [data-testid="stContainer"] { border-color: #E2E8F0 !important; }

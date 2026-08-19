@@ -236,16 +236,20 @@ def render_tradingagents_desk(watchlist: List[str]):
                 delta=f"{'+' if conviction >= 50 else ''}{conviction - 50} pts vs base"
             )
         with kpi2:
+            direction = "Upside" if target_upside >= 0 else "Downside"
+            # For a SELL verdict, a lower price target is the goal, so we invert the delta color
+            d_color = "inverse" if "SELL" in verdict else "normal"
             kpi2.metric(
                 label="12M Target Price",
                 value=f"${target_price}",
-                delta=f"{'+' if target_upside >= 0 else ''}{target_upside}% Upside"
+                delta=f"{abs(target_upside)}% Implied {direction}",
+                delta_color=d_color
             )
         with kpi3:
             kpi3.metric(
                 label="Dynamic Stop-Loss",
                 value=f"${stop_loss}",
-                delta=f"{stop_loss_pct}% Exit",
+                delta=f"{abs(stop_loss_pct)}% Exit Risk",
                 delta_color="inverse"
             )
         with kpi4:

@@ -103,14 +103,15 @@ class PortfolioManager:
             color = "#F57F17"
 
         # 6. Executive Narrative Synthesis
+        direction = "Upside" if target_upside_pct >= 0 else "Downside"
         executive_summary = f"""### 🏛️ Executive Investment Committee Verdict: **{verdict}** (`{conviction_score}/100 Conviction`)
 
 **Asset:** `{ticker}` ({name}) | **Current Market Price:** `${current_price}`
 
 #### 🎯 Strategic Directive & Trade Structure
 - **Verdict Action:** `{badge}`
-- **Price Target (12M):** **${final_target_price}** ({'+' if target_upside_pct >= 0 else ''}{target_upside_pct}% implied upside)
-- **Stop Loss Guardrail:** **${stop_loss}** ({round(((stop_loss-current_price)/current_price)*100, 1)}% max risk exit)
+- **Price Target (12M):** **${final_target_price}** ({abs(target_upside_pct)}% implied {direction})
+- **Stop Loss Guardrail:** **${stop_loss}** ({abs(round(((stop_loss-current_price)/current_price)*100, 1))}% max risk exit)
 - **Recommended Portfolio Size:** **{position_size_pct}%** (Risk-Parity Adjusted)
 - **Risk Classification:** `{risk_tier}`
 

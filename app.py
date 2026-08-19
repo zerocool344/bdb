@@ -135,10 +135,11 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_actions:
-    ac1, ac2 = st.columns([3, 2], vertical_alignment="bottom")
+    # Use a negative top margin container to pull everything up if needed, but centering the columns fixes the button alignment
+    ac1, ac2 = st.columns([1.1, 1], vertical_alignment="center")
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: flex-end; height: 38px; margin-bottom: 2px;">
+            <div style="display: flex; justify-content: flex-end; align-items: center; width: 100%; height: 100%; margin-top: 2px;">
                 <div class="sign-wrapper-1">
                     <div class="cat-climber-1">🐱</div>
                     <div class="neon-sign-1">
@@ -334,9 +335,10 @@ if "last_refreshed" not in st.session_state:
 # Creator badge + Last refreshed strip
 st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; 
-                padding: 6px 14px; margin: 0px 0 14px 0; border-radius: 6px;
+                padding: 6px 14px; margin: -28px 0 14px 0; border-radius: 6px;
                 background: linear-gradient(90deg, rgba(59,130,160,0.08), rgba(245,247,250,0)); 
-                border: 1px solid #E2E8F0;">
+                border: 1px solid #E2E8F0;
+                position: relative; z-index: 5;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="background: #3B82A0; color: #FFFFFF; font-weight: 700; font-size: 0.75rem; 
                          padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;">BUILT BY ZEROCOOL</span>

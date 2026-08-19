@@ -73,8 +73,8 @@ st.markdown("""
     
     /* Neon sign */
     @keyframes neon-flash {
-        0%, 100% { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 70px #ff00ff; color: #fff; }
-        50% { text-shadow: 0 0 2px #ff00ff, 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #ffa6ff; }
+        0%, 100% { text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41, 0 0 30px #00ff41, 0 0 40px #00ff41, 0 0 70px #00ff41; color: #fff; }
+        50% { text-shadow: 0 0 2px #00ff41, 0 0 5px #00ff41, 0 0 10px #00ff41; color: #b0ffb0; }
     }
     .neon-sign {
         font-family: 'Courier New', Courier, monospace;
@@ -83,11 +83,11 @@ st.markdown("""
         color: #fff;
         animation: neon-flash 1.5s infinite alternate;
         padding: 8px 14px;
-        border: 2px solid #ff00ff;
+        border: 2px solid #00ff41;
         border-radius: 10px;
         display: inline-block;
-        box-shadow: 0 0 10px #ff00ff, inset 0 0 10px #ff00ff;
-        background-color: rgba(30, 41, 59, 0.9);
+        box-shadow: 0 0 10px #00ff41, inset 0 0 10px #00ff41;
+        background-color: rgba(0, 0, 0, 0.9);
     }
 </style>
 """, unsafe_allow_html=True)

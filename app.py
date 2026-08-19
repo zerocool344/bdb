@@ -136,20 +136,20 @@ with col_title:
 
 with col_actions:
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-    ac1, ac2 = st.columns([3, 2])
+    ac1, ac2 = st.columns([1, 1])
     with ac1:
         st.markdown("""
-            <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
-                <div class="sign-wrapper-1">
+            <div style="display: flex; justify-content: center; align-items: center; height: 38px; width: 100%;">
+                <div class="sign-wrapper-1" style="width: 100%;">
                     <div class="cat-climber-1">🐱</div>
-                    <div class="neon-sign-1">
+                    <div class="neon-sign-1" style="width: 100%; justify-content: center;">
                         <span class="led-dot"></span> WE LIKE THE STOCK!
                     </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
     with ac2:
-        if st.button("🔄 Refresh Data", help="Refresh all live market data", use_container_width=True):
+        if st.button("🔄 Refresh Live Data", help="Refresh all live market data", use_container_width=True):
             from datetime import datetime
             try:
                 from zoneinfo import ZoneInfo

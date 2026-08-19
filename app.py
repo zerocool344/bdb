@@ -223,13 +223,18 @@ with tab1:
             st.subheader("🔍 Stock Lookup")
             search_query = st.text_input("Search by Ticker or Name (e.g. MSFT or Apple)", "")
             
-            # Filter based on search query
-            filtered_df = df[
-                df['Ticker'].str.contains(search_query, case=False) | 
-                df['Name'].str.contains(search_query, case=False)
-            ]
+            # Filter based on search query and take only the top match
+            if not search_query.strip():
+                filtered_df = pd.DataFrame()
+            else:
+                filtered_df = df[
+                    df['Ticker'].str.contains(search_query, case=False) | 
+                    df['Name'].str.contains(search_query, case=False)
+                ].head(1)
         
-            if filtered_df.empty:
+            if not search_query.strip():
+                st.info("Enter a ticker or company name above to view details.")
+            elif filtered_df.empty:
                 st.info("No stocks matched your search.")
             else:
                 for index, row in filtered_df.iterrows():

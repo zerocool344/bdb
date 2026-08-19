@@ -58,13 +58,8 @@ st.markdown("""
     .stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #3B82A0 0%, #2C6E8A 100%) !important;
         color: #FFFFFF !important;
-        font-weight: 700 !important;
-        border: none !important;
-        box-shadow: 0 2px 5px rgba(59, 130, 160, 0.3) !important;
-    }
-    button[title="Refresh all live market data"] {
-        width: 232px !important;
-        max-width: 232px !important;
+        font-weight: 700;
+        border: none;
     }
     .stButton > button { border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; }
     .stButton > button:hover { border-color: #3B82A0; color: #1E3A5F; }
@@ -112,8 +107,7 @@ st.markdown("""
         font-family: 'Courier New', monospace; font-size: 15px; font-weight: 600; letter-spacing: 2px;
         color: #00ff66; background: #08140c; border: 1px solid #00ff66; border-radius: 6px;
         padding: 5px 12px; box-shadow: 0 0 8px rgba(0,255,102,0.3), inset 0 0 6px rgba(0,255,102,0.2);
-        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-        width: 232px;
+        display: inline-flex; align-items: center; gap: 6px;
     }
     .led-dot { width: 7px; height: 7px; background-color: #00ff66; border-radius: 50%; box-shadow: 0 0 6px #00ff66; animation: blinkDot 1.2s infinite; }
     @keyframes blinkDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -142,7 +136,7 @@ with col_title:
 
 with col_actions:
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-    ac1, ac2 = st.columns([1, 1])
+    ac1, ac2 = st.columns([1.3, 1])
     with ac1:
         st.markdown("""
             <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">

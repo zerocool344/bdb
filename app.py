@@ -110,6 +110,8 @@ with col_neon:
     with nc2:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄", help="Refresh all live data", use_container_width=True):
+            from datetime import datetime
+            st.session_state["last_refreshed"] = datetime.now().strftime("%b %d, %Y • %I:%M %p")
             st.cache_data.clear()
             st.rerun()
 
@@ -271,6 +273,28 @@ def get_pelosi_trades():
 # Run the screener (will use cache unless refreshed)
 with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
+
+# Track last refresh timestamp
+from datetime import datetime
+if "last_refreshed" not in st.session_state:
+    st.session_state["last_refreshed"] = datetime.now().strftime("%b %d, %Y • %I:%M %p")
+
+# Creator badge + Last refreshed strip
+st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; 
+                padding: 6px 12px; margin: 4px 0 12px 0; border-radius: 6px;
+                background: linear-gradient(90deg, rgba(0,229,255,0.06), rgba(0,0,0,0)); 
+                border: 1px solid #1a2a3a;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: #00E5FF; color: #0E1117; font-weight: 700; font-size: 0.75rem; 
+                         padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;">BUILT BY ZEROCOOL</span>
+            <span style="color: #556677; font-size: 0.78rem;">v2.0 • Multi-Agent Edition</span>
+        </div>
+        <div style="color: #667788; font-size: 0.78rem;">
+            🕐 Data refreshed: <strong style="color: #8899aa;">{st.session_state["last_refreshed"]}</strong>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # Tabs
 tab1, tab_tradingagents, tab4, tab5, tab6 = st.tabs([

@@ -194,10 +194,9 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab_tradingagents, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab_tradingagents, tab3, tab4, tab5, tab6 = st.tabs([
     "Live Overview (Consensus)",
     "🤖 TradingAgents Desk",
-    "Interactive Stock Insights",
     "🧬 Deep Insights",
     "🇺🇸 Pelosi Tracker",
     "📈 ETF Benchmarks",
@@ -205,121 +204,122 @@ tab1, tab_tradingagents, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 with tab1:
-    st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
-    near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
-    st.dataframe(near_df, use_container_width=True)
-
-    st.subheader("FAR | 2–5 Year Deep Value (>25% Upside)")
-    far_df = df[df['List'] == 'FAR (Deep Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
-    st.dataframe(far_df, use_container_width=True)
-    
-    st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
-    watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
-    st.dataframe(watch_df, use_container_width=True)
-
-    st.markdown("---")
-    st.subheader("🤖 Quick Launch Multi-Agent Committee")
-    qc1, qc2 = st.columns([3, 1])
-    with qc1:
-        quick_ticker = st.selectbox(
-            "Select stock from screener for TradingAgents AI Committee",
-            options=WATCHLIST,
-            key="quick_launch_tab1"
-        )
-    with qc2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 Analyze on TradingAgents Desk", key="btn_quick_launch_tab1", use_container_width=True):
-            st.session_state["selected_ta_ticker"] = quick_ticker
-            st.info(f"✅ Queued **{quick_ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to run the AI Committee deliberation.")
-
+    main_col, side_col = st.columns([2.5, 1.5])
+    with main_col:
+            st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
+            near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            st.dataframe(near_df, use_container_width=True)
+        
+            st.subheader("FAR | 2–5 Year Deep Value (>25% Upside)")
+            far_df = df[df['List'] == 'FAR (Deep Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            st.dataframe(far_df, use_container_width=True)
+            
+            st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
+            watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            st.dataframe(watch_df, use_container_width=True)
+        
+            st.markdown("---")
+            st.subheader("🤖 Quick Launch Multi-Agent Committee")
+            qc1, qc2 = st.columns([3, 1])
+            with qc1:
+                quick_ticker = st.selectbox(
+                    "Select stock from screener for TradingAgents AI Committee",
+                    options=WATCHLIST,
+                    key="quick_launch_tab1"
+                )
+            with qc2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🚀 Analyze on TradingAgents Desk", key="btn_quick_launch_tab1", use_container_width=True):
+                    st.session_state["selected_ta_ticker"] = quick_ticker
+                    st.info(f"✅ Queued **{quick_ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to run the AI Committee deliberation.")
+        
+    with side_col:
+            st.subheader("🔍 Stock Lookup")
+            search_query = st.text_input("Search by Ticker or Name (e.g. MSFT or Apple)", "")
+            
+            # Filter based on search query
+            filtered_df = df[
+                df['Ticker'].str.contains(search_query, case=False) | 
+                df['Name'].str.contains(search_query, case=False)
+            ]
+        
+            if filtered_df.empty:
+                st.info("No stocks matched your search.")
+            else:
+                for index, row in filtered_df.iterrows():
+                    with st.container(border=True):
+                        c1, c2 = st.columns(2)
+                        c3, c4 = st.columns(2)
+                        
+                        c1.metric(label=f"**{row['Ticker']}** - {row['Name']}", value=row['Current Price'])
+                        c2.metric(label="Consensus Rating", value=row['Consensus'])
+                        c3.metric(label="Target Price (Mean)", value=row['Target Price'])
+                        c4.metric(label="Target Upside", value=f"{row['Upside %']}%" if row['Upside %'] != 0.0 else "N/A")
+                        
+                        st.markdown(f"**List Classification:** {row['List']}")
+                        st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
+                        st.markdown(f"**Risk:** {row['Risk']}")
+                        
+                        # Setup timeframe selection
+                        ticker = row['Ticker']
+                        key_name = f"period_{ticker}"
+                        period_options = {"1D": "1d", "5D": "5d", "1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
+                        
+                        if key_name not in st.session_state:
+                            st.session_state[key_name] = "1Y"
+                        fetch_period = period_options[st.session_state[key_name]]
+                        
+                        # Render Chart
+                        try:
+                            chart_data = get_chart_data(ticker, period=fetch_period)
+                            if not chart_data.empty:
+                                st.markdown(f"**{st.session_state[key_name]} Price Trend**")
+                                
+                                fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                                                    vertical_spacing=0.03, row_width=[0.2, 0.7])
+                                
+                                fig.add_trace(go.Candlestick(x=chart_data.index,
+                                                open=chart_data['Open'],
+                                                high=chart_data['High'],
+                                                low=chart_data['Low'],
+                                                close=chart_data['Close'],
+                                                name="Price"), row=1, col=1)
+                                
+                                colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
+                                fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
+                                
+                                fig.update_layout(
+                                    xaxis_rangeslider_visible=False,
+                                    height=250,
+                                    margin=dict(l=0, r=0, t=10, b=0),
+                                    showlegend=False,
+                                    plot_bgcolor="rgba(0,0,0,0)",
+                                    paper_bgcolor="rgba(0,0,0,0)"
+                                )
+                                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+                                
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Timeframe Toggle (Centered below graph)
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                st.radio(
+                                        f"Select Timeframe for {ticker}",
+                                        options=list(period_options.keys()),
+                                        horizontal=True,
+                                        key=key_name,
+                                        label_visibility="collapsed"
+                                    )
+                        except Exception as e:
+                            st.error("Error loading chart.")
+        
+                        # 1-Click Multi-Agent Deliberation Launch
+                        if st.button(f"🤖 Launch Multi-Agent Committee for {ticker}", key=f"btn_ta_tab2_{ticker}", use_container_width=True):
+                            st.session_state["selected_ta_ticker"] = ticker
+                            st.info(f"✅ Queued **{ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to view the AI Committee deliberation.")
+        
 with tab_tradingagents:
     render_tradingagents_desk(WATCHLIST)
-
-with tab2:
-    st.subheader("🔍 Interactive Stock Insights")
-    search_query = st.text_input("Search by Ticker or Name (e.g. MSFT or Apple)", "")
-    
-    # Filter based on search query
-    filtered_df = df[
-        df['Ticker'].str.contains(search_query, case=False) | 
-        df['Name'].str.contains(search_query, case=False)
-    ]
-
-    if filtered_df.empty:
-        st.info("No stocks matched your search.")
-    else:
-        for index, row in filtered_df.iterrows():
-            with st.container(border=True):
-                c1, c2, c3, c4 = st.columns(4)
-                
-                c1.metric(label=f"**{row['Ticker']}** - {row['Name']}", value=row['Current Price'])
-                c2.metric(label="Consensus Rating", value=row['Consensus'])
-                c3.metric(label="Target Price (Mean)", value=row['Target Price'])
-                c4.metric(label="Target Upside", value=f"{row['Upside %']}%" if row['Upside %'] != 0.0 else "N/A")
-                
-                st.markdown(f"**List Classification:** {row['List']}")
-                st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
-                st.markdown(f"**Risk:** {row['Risk']}")
-                
-                # Setup timeframe selection
-                ticker = row['Ticker']
-                key_name = f"period_{ticker}"
-                period_options = {"1D": "1d", "5D": "5d", "1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "5Y": "5y"}
-                
-                if key_name not in st.session_state:
-                    st.session_state[key_name] = "1Y"
-                fetch_period = period_options[st.session_state[key_name]]
-                
-                # Render Chart
-                try:
-                    chart_data = get_chart_data(ticker, period=fetch_period)
-                    if not chart_data.empty:
-                        st.markdown(f"**{st.session_state[key_name]} Price Trend**")
-                        
-                        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
-                                            vertical_spacing=0.03, row_width=[0.2, 0.7])
-                        
-                        fig.add_trace(go.Candlestick(x=chart_data.index,
-                                        open=chart_data['Open'],
-                                        high=chart_data['High'],
-                                        low=chart_data['Low'],
-                                        close=chart_data['Close'],
-                                        name="Price"), row=1, col=1)
-                        
-                        colors = ['#26a69a' if close >= open_p else '#ef5350' for open_p, close in zip(chart_data['Open'], chart_data['Close'])]
-                        fig.add_trace(go.Bar(x=chart_data.index, y=chart_data['Volume'], marker_color=colors, name="Volume"), row=2, col=1)
-                        
-                        fig.update_layout(
-                            xaxis_rangeslider_visible=False,
-                            height=400,
-                            margin=dict(l=0, r=0, t=10, b=0),
-                            showlegend=False,
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            paper_bgcolor="rgba(0,0,0,0)"
-                        )
-                        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-                        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # Timeframe Toggle (Centered below graph)
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        tc1, tc2, tc3 = st.columns([1, 4, 1])
-                        with tc2:
-                            st.radio(
-                                f"Select Timeframe for {ticker}",
-                                options=list(period_options.keys()),
-                                horizontal=True,
-                                key=key_name,
-                                label_visibility="collapsed"
-                            )
-                except Exception as e:
-                    st.error("Error loading chart.")
-
-                # 1-Click Multi-Agent Deliberation Launch
-                if st.button(f"🤖 Launch Multi-Agent Committee for {ticker}", key=f"btn_ta_tab2_{ticker}", use_container_width=True):
-                    st.session_state["selected_ta_ticker"] = ticker
-                    st.info(f"✅ Queued **{ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to view the AI Committee deliberation.")
 
 with tab3:
     st.subheader("🧬 Deep Insights & Alternative Data")

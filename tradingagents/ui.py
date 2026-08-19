@@ -299,11 +299,13 @@ def render_tradingagents_desk(watchlist: List[str]):
                 rounds_dict[r_num].append(turn)
 
             round_tab_labels = [f"Round {r}: {'Initial Theses' if r==1 else 'Cross-Examination Rebuttals' if r==2 else 'Final Arguments'}" for r in rounds_dict.keys()]
-            round_tabs = st.tabs(round_tab_labels)
+            
+            # Fix nested tabs Streamlit bug by using radio button
+            selected_round_label = st.radio("Select Debate Round", round_tab_labels, horizontal=True, label_visibility="collapsed")
+            selected_idx = round_tab_labels.index(selected_round_label)
+            r_num = list(rounds_dict.keys())[selected_idx]
 
-            for idx, r_num in enumerate(rounds_dict.keys()):
-                with round_tabs[idx]:
-                    for turn in rounds_dict[r_num]:
+            for turn in rounds_dict[r_num]:
                         speaker = turn.get("speaker", "Researcher")
                         avatar = turn.get("avatar", "🗣️")
                         dialogue = turn.get("dialogue", "")
@@ -359,23 +361,17 @@ def render_tradingagents_desk(watchlist: List[str]):
 
         # 3. Specialist Agent Deep-Dive Sub-Tabs
         st.markdown("### 🔬 Specialist Intelligence Deep-Dives")
-        subtab_fund, subtab_tech, subtab_sent, subtab_risk = st.tabs([
-            "📊 Fundamental Analysis",
-            "📈 Technical Analysis",
-            "📰 Sentiment & News",
-            "🛡️ Risk & Volatility"
-        ])
-
-        with subtab_fund:
+        
+        deep_dive_options = ["📊 Fundamental Analysis", "📈 Technical Analysis", "📰 Sentiment & News", "🛡️ Risk & Volatility"]
+        selected_deep_dive = st.radio("Select Deep-Dive Report", deep_dive_options, horizontal=True, label_visibility="collapsed")
+        
+        if selected_deep_dive == "📊 Fundamental Analysis":
             st.markdown(fund.get("report_markdown", "No fundamental report generated."))
-
-        with subtab_tech:
+        elif selected_deep_dive == "📈 Technical Analysis":
             st.markdown(tech.get("report_markdown", "No technical report generated."))
-
-        with subtab_sent:
+        elif selected_deep_dive == "📰 Sentiment & News":
             st.markdown(sent.get("report_markdown", "No sentiment report generated."))
-
-        with subtab_risk:
+        elif selected_deep_dive == "🛡️ Risk & Volatility":
             st.markdown(risk.get("report_markdown", "No risk report generated."))
 
     else:

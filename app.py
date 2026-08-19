@@ -32,12 +32,7 @@ with col_title:
 def run_screener(watchlist):
     results = []
     
-    # Optional progress bar if running in Streamlit
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
     for i, ticker_sym in enumerate(watchlist):
-        status_text.text(f"Screening {ticker_sym}...")
         try:
             stock = yf.Ticker(ticker_sym)
             info = stock.info
@@ -95,12 +90,8 @@ def run_screener(watchlist):
             })
             
         # Update progress
-        progress_bar.progress((i + 1) / len(watchlist))
         time.sleep(0.1) # Small delay to respect rate limits
         
-    progress_bar.empty()
-    status_text.empty()
-    
     return pd.DataFrame(results)
 
 @st.cache_data(ttl=86400, show_spinner=False)

@@ -93,8 +93,7 @@ st.markdown("""
         100% { transform: translateY(18px) rotate(-15deg); opacity: 0.2; }
     }
 
-    /* ── 4 LED Signage Design Styles ── */
-    /* Style 1: Dot-Matrix LED Board + Climbing Kitty */
+    /* ── Dot-Matrix LED Board + Climbing Kitty ── */
     .sign-wrapper-1 { position: relative; display: inline-flex; align-items: center; }
     .cat-climber-1 {
         position: absolute; top: -16px; right: 12px; font-size: 16px;
@@ -112,51 +111,6 @@ st.markdown("""
     }
     .led-dot { width: 7px; height: 7px; background-color: #00ff66; border-radius: 50%; box-shadow: 0 0 6px #00ff66; animation: blinkDot 1.2s infinite; }
     @keyframes blinkDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-    /* Style 2: Cyberpunk Glass Ticker + Chart Climbing Kitty */
-    .sign-wrapper-2 { display: inline-flex; align-items: center; }
-    .neon-sign-2 {
-        font-family: 'Courier New', monospace; font-size: 15px; font-weight: 500; letter-spacing: 1.5px;
-        color: #e2fce6; background: linear-gradient(135deg, rgba(16,36,24,0.95), rgba(6,18,12,0.95));
-        border: 1px solid rgba(0,229,255,0.7); border-radius: 8px; padding: 5px 12px;
-        box-shadow: 0 0 10px rgba(0,229,255,0.25), inset 0 0 8px rgba(0,255,65,0.15);
-        display: inline-flex; align-items: center; gap: 8px;
-    }
-    .chart-climb-kitty { display: inline-block; animation: climbChart 2.5s infinite alternate ease-in-out; }
-    @keyframes climbChart { 0% { transform: translate(-2px, 3px) scale(0.9); } 100% { transform: translate(3px, -3px) scale(1.1); } }
-
-    /* Style 3: Matrix Terminal Ticker + Prowling Kitty */
-    .sign-wrapper-3 { position: relative; display: inline-flex; align-items: center; }
-    .cat-prowler-3 { position: absolute; top: -14px; animation: prowlAcross 4.5s infinite linear; font-size: 13px; }
-    @keyframes prowlAcross { 0% { left: 5%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { left: 75%; opacity: 0; } }
-    .neon-sign-3 {
-        font-family: 'Courier New', monospace; font-size: 15px; font-weight: 600; letter-spacing: 1.5px;
-        color: #00ff41; background: #000000; border: 1px solid #00ff41; border-radius: 4px;
-        padding: 5px 12px; box-shadow: 0 0 8px rgba(0,255,65,0.3);
-    }
-    .blink-cursor { animation: blinkCursor 0.8s infinite; }
-    @keyframes blinkCursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-
-    /* Style 4: Minimalist Capsule + Peeking Kitty Paws & Ears */
-    .sign-wrapper-4 { position: relative; display: inline-flex; align-items: center; }
-    .cat-peeker-4 {
-        position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 14px;
-        animation: peekaboo 3.2s infinite ease-in-out;
-    }
-    @keyframes peekaboo {
-        0%, 100% { transform: translateX(-50%) translateY(7px); opacity: 0; }
-        30%, 70% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
-    }
-    .neon-sign-4 {
-        font-family: 'Courier New', monospace; font-size: 14px; font-weight: 500; letter-spacing: 1px;
-        color: #1E293B; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px;
-        padding: 5px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: inline-flex; align-items: center; gap: 6px;
-    }
-    .live-beacon {
-        width: 7px; height: 7px; background-color: #10b981; border-radius: 50%;
-        box-shadow: 0 0 6px #10b981; animation: pulseBeacon 1.5s infinite;
-    }
-    @keyframes pulseBeacon { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -166,10 +120,6 @@ WATCHLIST = [
     "SNOW", "CRM", "NKE", "DIS", "BA", 
     "STX", "LNG", "U", "AAPL", "NVDA", "META"
 ]
-
-# Sign Style State
-if "sign_style_choice" not in st.session_state:
-    st.session_state["sign_style_choice"] = "1. Dot-Matrix + Climbing Kitty 🐱"
 
 col_logo, col_title, col_actions = st.columns([1, 6, 5])
 with col_logo:
@@ -185,53 +135,17 @@ with col_title:
     st.markdown("Automated equity screening for apes hunting deep effin' value. (Not financial advice—we just like the stock. 🐱📈)")
 
 with col_actions:
-    st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
-    
-    # Render selected signage style HTML
-    current_style = st.session_state.get("sign_style_choice", "1. Dot-Matrix + Climbing Kitty 🐱")
-    
-    if "1." in current_style:
-        sign_html = """
-        <div class="sign-wrapper-1">
-            <div class="cat-climber-1">🐱</div>
-            <div class="neon-sign-1">
-                <span class="led-dot"></span> WE LIKE THE STOCK!
-            </div>
-        </div>
-        """
-    elif "2." in current_style:
-        sign_html = """
-        <div class="sign-wrapper-2">
-            <div class="neon-sign-2">
-                <span class="chart-climb-kitty">🐱📈</span>
-                <span>WE LIKE THE STOCK!</span>
-            </div>
-        </div>
-        """
-    elif "3." in current_style:
-        sign_html = """
-        <div class="sign-wrapper-3">
-            <div class="cat-prowler-3">🐾 🐱</div>
-            <div class="neon-sign-3">
-                &gt; WE LIKE THE STOCK! <span class="blink-cursor">█</span>
-            </div>
-        </div>
-        """
-    else:
-        sign_html = """
-        <div class="sign-wrapper-4">
-            <div class="cat-peeker-4">🐾 🐱 🐾</div>
-            <div class="neon-sign-4">
-                <span class="live-beacon"></span> WE LIKE THE STOCK!
-            </div>
-        </div>
-        """
-        
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     ac1, ac2 = st.columns([3, 2])
     with ac1:
-        st.markdown(f"""
+        st.markdown("""
             <div style="display: flex; justify-content: flex-end; align-items: center; height: 38px;">
-                {sign_html}
+                <div class="sign-wrapper-1">
+                    <div class="cat-climber-1">🐱</div>
+                    <div class="neon-sign-1">
+                        <span class="led-dot"></span> WE LIKE THE STOCK!
+                    </div>
+                </div>
             </div>
         """, unsafe_allow_html=True)
     with ac2:
@@ -245,24 +159,6 @@ with col_actions:
                 central_tz = timezone(timedelta(hours=-5))
             st.session_state["last_refreshed"] = datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
             st.cache_data.clear()
-            st.rerun()
-
-    # Style Switcher Expander so user can preview/switch all 4 anytime
-    with st.expander("🎨 Choose Sign Style (4 Options)", expanded=False):
-        style_choice = st.selectbox(
-            "Select LED Sign Style:",
-            options=[
-                "1. Dot-Matrix + Climbing Kitty 🐱",
-                "2. Cyberpunk Glass + Chart Kitty 📈",
-                "3. Matrix Terminal + Prowling Kitty 🐾",
-                "4. Minimal Capsule + Peeking Kitty 🐾🐱"
-            ],
-            index=0,
-            key="sign_style_selector",
-            label_visibility="collapsed"
-        )
-        if style_choice != st.session_state["sign_style_choice"]:
-            st.session_state["sign_style_choice"] = style_choice
             st.rerun()
 
 

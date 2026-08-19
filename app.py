@@ -223,19 +223,28 @@ with tab1:
             st.subheader("🔍 Stock Lookup")
             search_query = st.text_input("Search by Ticker or Name (e.g. MSFT or Apple)", "")
             
-            # Filter based on search query and take only the top match
             if not search_query.strip():
                 filtered_df = pd.DataFrame()
             else:
+                # 1. First search the existing master list
                 filtered_df = df[
                     df['Ticker'].str.contains(search_query, case=False) | 
                     df['Name'].str.contains(search_query, case=False)
-                ].head(1)
+                ]
+                
+                # 2. If not found, try to fetch it live as a ticker symbol
+                if filtered_df.empty:
+                    with st.spinner(f"Fetching live data for {search_query.upper()}..."):
+                        dynamic_df = run_screener([search_query.upper()])
+                        if not dynamic_df.empty and dynamic_df['List'].iloc[0] != 'ERROR':
+                            filtered_df = dynamic_df
+                            
+                filtered_df = filtered_df.head(1)
         
             if not search_query.strip():
                 st.info("Enter a ticker or company name above to view details.")
             elif filtered_df.empty:
-                st.info("No stocks matched your search.")
+                st.error(f"'{search_query}' not found in master list and is not a valid ticker symbol.")
             else:
                 for index, row in filtered_df.iterrows():
                     with st.container(border=True):

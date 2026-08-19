@@ -119,8 +119,14 @@ with col_neon:
     with nc2:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄", help="Refresh all live data", use_container_width=True):
-            from datetime import datetime, timezone, timedelta
-            st.session_state["last_refreshed"] = datetime.now(timezone(timedelta(hours=-6))).strftime("%b %d, %Y • %I:%M %p CST")
+            from datetime import datetime
+            try:
+                from zoneinfo import ZoneInfo
+                central_tz = ZoneInfo("America/Chicago")
+            except Exception:
+                from datetime import timezone, timedelta
+                central_tz = timezone(timedelta(hours=-5))
+            st.session_state["last_refreshed"] = datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
             st.cache_data.clear()
             st.rerun()
 
@@ -283,11 +289,17 @@ def get_pelosi_trades():
 with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
-# Track last refresh timestamp
-from datetime import datetime, timezone, timedelta
-CST = timezone(timedelta(hours=-6))
+# Track last refresh timestamp in US Central Time
+from datetime import datetime
+try:
+    from zoneinfo import ZoneInfo
+    central_tz = ZoneInfo("America/Chicago")
+except Exception:
+    from datetime import timezone, timedelta
+    central_tz = timezone(timedelta(hours=-5))
+
 if "last_refreshed" not in st.session_state:
-    st.session_state["last_refreshed"] = datetime.now(CST).strftime("%b %d, %Y • %I:%M %p CST")
+    st.session_state["last_refreshed"] = datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
 
 # Creator badge + Last refreshed strip
 st.markdown(f"""

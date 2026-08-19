@@ -158,6 +158,7 @@ class TechnicalAnalyst:
             "momentum_score": mom_score,
             "trend_bias": trend_bias,
             "trend_structure": trend_structure,
+            "current_price": current_price,
             "signals": signals,
             "levels": {
                 "support": support,

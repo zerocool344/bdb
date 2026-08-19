@@ -214,12 +214,12 @@ def render_tradingagents_desk(watchlist: List[str]):
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <div>
                         <span style="font-size: 1.1rem; color: #90caf9; font-weight: 600;">EXECUTIVE COMMITTEE CONSENSUS VERDICT</span>
-                        <h1 style="margin: 4px 0 0 0; color: {color}; font-size: 2.2rem;">{badge}</h1>
+                        <div style="margin: 4px 0 0 0; color: {color}; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.5px;">{badge}</div>
                         <span style="color: #b0bec5; font-size: 0.95rem;">{profile.get('name', target_ticker)} ({target_ticker}) • Current Price: <strong>${current_price}</strong></span>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 0.9rem; color: #b0bec5;">CONVICTION SCORE</span>
-                        <h2 style="margin: 0; color: #ffffff; font-size: 2rem;">{conviction}<span style="font-size: 1.1rem; color: #90caf9;"> / 100</span></h2>
+                        <span style="font-size: 0.9rem; color: #b0bec5; font-weight: 600;">CONVICTION SCORE</span>
+                        <div style="margin: 0; color: #ffffff; font-size: 2.2rem; font-weight: 800;">{conviction}<span style="font-size: 1.1rem; color: #90caf9; font-weight: 600;"> / 100</span></div>
                     </div>
                 </div>
             </div>

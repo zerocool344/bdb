@@ -71,23 +71,24 @@ st.markdown("""
     .stTextInput input { background: #FFFFFF; border: 1px solid #CBD5E1; color: #1E293B; }
     .stSelectbox > div > div { background: #FFFFFF; }
     
-    /* Neon sign */
+    /* Neon sign - Subtle Ticker Style */
     @keyframes neon-flash {
-        0%, 100% { text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41, 0 0 30px #00ff41, 0 0 40px #00ff41, 0 0 70px #00ff41; color: #fff; }
-        50% { text-shadow: 0 0 2px #00ff41, 0 0 5px #00ff41, 0 0 10px #00ff41; color: #b0ffb0; }
+        0%, 100% { text-shadow: 0 0 6px rgba(0, 255, 65, 0.8), 0 0 12px rgba(0, 255, 65, 0.3); color: #e2fce6; opacity: 1; }
+        50% { text-shadow: 0 0 2px rgba(0, 255, 65, 0.6); color: #9be6a8; opacity: 0.8; }
     }
     .neon-sign {
         font-family: 'Courier New', Courier, monospace;
-        font-size: 22px;
-        font-weight: bold;
-        color: #fff;
-        animation: neon-flash 1.5s infinite alternate;
-        padding: 8px 14px;
-        border: 2px solid #00ff41;
-        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: 1.5px;
+        color: #e2fce6;
+        animation: neon-flash 2.5s infinite alternate ease-in-out;
+        padding: 5px 12px;
+        border: 1px solid rgba(0, 255, 65, 0.6);
+        border-radius: 6px;
         display: inline-block;
-        box-shadow: 0 0 10px #00ff41, inset 0 0 10px #00ff41;
-        background-color: rgba(0, 0, 0, 0.9);
+        box-shadow: 0 0 6px rgba(0, 255, 65, 0.25), inset 0 0 6px rgba(0, 255, 65, 0.15);
+        background-color: rgba(10, 20, 15, 0.9);
     }
 </style>
 """, unsafe_allow_html=True)

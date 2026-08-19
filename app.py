@@ -171,6 +171,22 @@ def run_screener(watchlist):
             if current_price and target_price and current_price > 0:
                 upside = round(((target_price - current_price) / current_price) * 100, 2)
             
+            # Calculate True P/E (Enterprise Value / Earnings)
+            ev = info.get("enterpriseValue")
+            net_income = info.get("netIncomeToCommon")
+            market_cap = info.get("marketCap")
+            trailing_pe = info.get("trailingPE")
+            
+            true_pe = None
+            if ev and ev > 0:
+                if net_income and net_income > 0:
+                    true_pe = round(ev / net_income, 2)
+                elif market_cap and trailing_pe and trailing_pe > 0:
+                    # Implied earnings from market cap and trailing PE
+                    implied_earnings = market_cap / trailing_pe
+                    if implied_earnings > 0:
+                        true_pe = round(ev / implied_earnings, 2)
+
             # Determine List Placement (NEAR vs FAR vs NEUTRAL)
             # FAR = High upside (e.g. > 25%), NEAR = Moderate upside (e.g. 10-25%)
             # This is a dynamic rule set based on upside.
@@ -191,6 +207,7 @@ def run_screener(watchlist):
                 "Target Price": f"${target_price}" if target_price else "N/A",
                 "Consensus": consensus,
                 "Upside %": upside if upside is not None else 0.0,
+                "True P/E": true_pe if true_pe is not None else "N/A",
                 "Thesis": f"Dynamic rating: {consensus}. Target: {target_price}",
                 "Risk": "Market volatility, execution risk."
             })
@@ -205,6 +222,7 @@ def run_screener(watchlist):
                 "Target Price": "N/A",
                 "Consensus": "N/A",
                 "Upside %": 0.0,
+                "True P/E": "N/A",
                 "Thesis": "Error fetching data.",
                 "Risk": str(e)
             })

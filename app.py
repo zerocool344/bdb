@@ -13,55 +13,63 @@ from tradingagents.ui import render_tradingagents_desk, create_radar_chart
 
 st.set_page_config(page_title="The Tendie Tracker", layout="wide", page_icon="logo.png")
 
-# ── Global Trading Terminal CSS ──
+# ── Global Soft Gray Institutional Theme ──
 st.markdown("""
 <style>
-    /* Dark trading terminal background */
-    .stApp { background-color: #0E1117; }
+    /* Soft gray background */
+    .stApp { background-color: #F5F7FA; }
     
-    /* Tab styling - cyan underline on active */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid #1a2332; }
+    /* Tab styling - steel blue underline on active */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 2px solid #E2E8F0; }
     .stTabs [data-baseweb="tab"] {
         background-color: transparent;
-        color: #8899aa;
+        color: #64748B;
         font-weight: 600;
         font-size: 0.9rem;
         padding: 10px 18px;
         border-radius: 6px 6px 0 0;
     }
     .stTabs [aria-selected="true"] {
-        color: #00E5FF !important;
-        border-bottom: 3px solid #00E5FF;
-        background-color: rgba(0, 229, 255, 0.05);
+        color: #1E3A5F !important;
+        border-bottom: 3px solid #3B82A0;
+        background-color: rgba(59, 130, 160, 0.06);
     }
-    .stTabs [data-baseweb="tab"]:hover { color: #ffffff; background-color: rgba(255,255,255,0.04); }
+    .stTabs [data-baseweb="tab"]:hover { color: #1E3A5F; background-color: rgba(59, 130, 160, 0.04); }
     
-    /* Metric cards with subtle glow */
+    /* Metric cards with clean borders */
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #111927 0%, #0d1520 100%);
-        border: 1px solid #1a2a3a;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
         border-radius: 8px;
         padding: 12px 16px;
-        box-shadow: 0 0 8px rgba(0, 229, 255, 0.06);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
-    [data-testid="stMetricLabel"] { color: #8899aa !important; font-size: 0.8rem; }
-    [data-testid="stMetricValue"] { color: #ffffff !important; font-weight: 700; }
-    [data-testid="stMetricDelta"] svg { display: none; }
+    [data-testid="stMetricLabel"] { color: #64748B !important; font-size: 0.8rem; }
+    [data-testid="stMetricValue"] { color: #1E293B !important; font-weight: 700; }
     
-    /* Dataframe dark striping */
-    .stDataFrame { border-radius: 8px; overflow: hidden; }
+    /* Dataframe clean styling */
+    .stDataFrame { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     
     /* Subheader styling */
-    h2, h3 { color: #e0e8f0 !important; letter-spacing: 0.5px; }
+    h1 { color: #1E293B !important; }
+    h2, h3 { color: #334155 !important; letter-spacing: 0.3px; }
     
     /* Button styling */
     .stButton > button[kind="primary"] {
-        background: linear-gradient(90deg, #00E5FF 0%, #00B8D4 100%) !important;
-        color: #0E1117 !important;
+        background: linear-gradient(90deg, #3B82A0 0%, #2C6E8A 100%) !important;
+        color: #FFFFFF !important;
         font-weight: 700;
         border: none;
     }
-    .stButton > button { border: 1px solid #1a2a3a; }
+    .stButton > button { border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; }
+    .stButton > button:hover { border-color: #3B82A0; color: #1E3A5F; }
+    
+    /* Container borders */
+    [data-testid="stContainer"] { border-color: #E2E8F0 !important; }
+    
+    /* Input fields */
+    .stTextInput input { background: #FFFFFF; border: 1px solid #CBD5E1; color: #1E293B; }
+    .stSelectbox > div > div { background: #FFFFFF; }
     
     /* Neon sign */
     @keyframes neon-flash {
@@ -79,7 +87,7 @@ st.markdown("""
         border-radius: 10px;
         display: inline-block;
         box-shadow: 0 0 10px #ff00ff, inset 0 0 10px #ff00ff;
-        background-color: rgba(0, 0, 0, 0.8);
+        background-color: rgba(30, 41, 59, 0.9);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -283,15 +291,15 @@ if "last_refreshed" not in st.session_state:
 st.markdown(f"""
     <div style="display: flex; justify-content: space-between; align-items: center; 
                 padding: 6px 12px; margin: 4px 0 12px 0; border-radius: 6px;
-                background: linear-gradient(90deg, rgba(0,229,255,0.06), rgba(0,0,0,0)); 
-                border: 1px solid #1a2a3a;">
+                background: linear-gradient(90deg, rgba(59,130,160,0.08), rgba(245,247,250,0)); 
+                border: 1px solid #E2E8F0;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="background: #00E5FF; color: #0E1117; font-weight: 700; font-size: 0.75rem; 
+            <span style="background: #3B82A0; color: #FFFFFF; font-weight: 700; font-size: 0.75rem; 
                          padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;">BUILT BY ZEROCOOL</span>
-            <span style="color: #556677; font-size: 0.78rem;">v2.0 • Multi-Agent Edition</span>
+            <span style="color: #94A3B8; font-size: 0.78rem;">v2.0 • Multi-Agent Edition</span>
         </div>
-        <div style="color: #667788; font-size: 0.78rem;">
-            🕐 Data refreshed: <strong style="color: #8899aa;">{st.session_state["last_refreshed"]}</strong>
+        <div style="color: #64748B; font-size: 0.78rem;">
+            🕐 Data refreshed: <strong style="color: #334155;">{st.session_state["last_refreshed"]}</strong>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -385,9 +393,9 @@ with tab1:
                                     y=chart_data['Close'],
                                     mode='lines',
                                     name="Price",
-                                    line=dict(color='#00E5FF', width=2),
+                                    line=dict(color='#3B82A0', width=2),
                                     fill='tozeroy',
-                                    fillcolor='rgba(0, 229, 255, 0.1)'
+                                    fillcolor='rgba(59, 130, 160, 0.1)'
                                 ), row=1, col=1)
                                 
                                 fig.add_trace(go.Bar(
@@ -466,7 +474,7 @@ with tab5:
                     
             if data_dict:
                 fig = go.Figure()
-                colors = {"NANC": "#00E5FF", "SPY": "#FFB74D", "QQQ": "#CE93D8", "VOO": "#B0BEC5"}
+                colors = {"NANC": "#3B82A0", "SPY": "#E07A3A", "QQQ": "#7C5CBF", "VOO": "#64748B"}
                 
                 for t, df_t in data_dict.items():
                     fig.add_trace(go.Scatter(x=df_t.index, y=df_t['Return'], mode='lines', name=t, line=dict(color=colors.get(t))))

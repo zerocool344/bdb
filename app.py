@@ -7,6 +7,10 @@ from plotly.subplots import make_subplots
 import requests
 from bs4 import BeautifulSoup
 
+# TauricResearch/TradingAgents multi-agent financial framework integration
+from tradingagents import TradingAgentsGraph, DEFAULT_CONFIG
+from tradingagents.ui import render_tradingagents_desk, create_radar_chart
+
 st.set_page_config(page_title="The Tendie Tracker", layout="wide", page_icon="logo.png")
 
 # Master Watchlist
@@ -199,7 +203,15 @@ with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Live Overview (Consensus)", "Interactive Stock Insights", "🧬 Deep Insights", "🇺🇸 Pelosi Tracker", "📈 ETF Benchmarks", "📚 Master Lists"])
+tab1, tab_tradingagents, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Live Overview (Consensus)",
+    "🤖 TradingAgents Desk",
+    "Interactive Stock Insights",
+    "🧬 Deep Insights",
+    "🇺🇸 Pelosi Tracker",
+    "📈 ETF Benchmarks",
+    "📚 Master Lists"
+])
 
 with tab1:
     st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
@@ -213,6 +225,24 @@ with tab1:
     st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
     watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
     st.dataframe(watch_df, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("🤖 Quick Launch Multi-Agent Committee")
+    qc1, qc2 = st.columns([3, 1])
+    with qc1:
+        quick_ticker = st.selectbox(
+            "Select stock from screener for TradingAgents AI Committee",
+            options=WATCHLIST,
+            key="quick_launch_tab1"
+        )
+    with qc2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚀 Analyze on TradingAgents Desk", key="btn_quick_launch_tab1", use_container_width=True):
+            st.session_state["selected_ta_ticker"] = quick_ticker
+            st.info(f"✅ Queued **{quick_ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to run the AI Committee deliberation.")
+
+with tab_tradingagents:
+    render_tradingagents_desk(WATCHLIST)
 
 with tab2:
     st.subheader("🔍 Interactive Stock Insights")
@@ -294,6 +324,11 @@ with tab2:
                             )
                 except Exception as e:
                     st.error("Error loading chart.")
+
+                # 1-Click Multi-Agent Deliberation Launch
+                if st.button(f"🤖 Launch Multi-Agent Committee for {ticker}", key=f"btn_ta_tab2_{ticker}", use_container_width=True):
+                    st.session_state["selected_ta_ticker"] = ticker
+                    st.info(f"✅ Queued **{ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to view the AI Committee deliberation.")
 
 with tab3:
     st.subheader("🧬 Deep Insights & Alternative Data")

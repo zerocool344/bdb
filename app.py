@@ -692,7 +692,21 @@ with tab1:
     main_col, side_col = st.columns([2.5, 1.5])
     with main_col:
             if "Composite" in df.columns:
-                st.caption("Sorted by **Composite** — a 0–100 multi-factor score (momentum, trend, low-vol; plus Value & Quality when a Finnhub key is added on the 🎯 Screener tab). See the 🎯 Screener for the full ranked model.")
+                with st.expander("ℹ️ Column legend — what these scores mean", expanded=False):
+                    st.markdown("""
+**Composite** — The overall 0–100 score. It blends all the factors below into one number. Higher = stronger candidate. Stocks are sorted by this.
+
+**Rank** — Where the stock sits in the list, #1 = highest Composite.
+
+**Momentum** — How strongly the price has been rising over the last 6–12 months (ignoring the most recent month, which is noise). High = the stock already has upward strength behind it.
+
+**LowVol** — How calm the price swings are. High = a steadier, less jumpy ride. (Low-scoring stocks are the wilder ones.)
+
+**Trend** — Whether the stock is trading above its 200-day average (its long-term direction). High = in a sustained uptrend.
+
+---
+*With a Finnhub key added on the 🎯 Screener tab, two more factors join the Composite: **Value** (cheapness vs. earnings) and **Quality** (return on equity). See the 🎯 Screener tab for the full ranked model.*
+""")
             st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
             near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values(_sort_col, ascending=False).reset_index(drop=True)
             st.dataframe(near_df, use_container_width=True)

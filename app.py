@@ -234,18 +234,31 @@ def run_screener(watchlist):
         # Update progress
         time.sleep(0.1) # Small delay to respect rate limits
         
-    return pd.DataFrame(results)
+    out = pd.DataFrame(results)
+    try:
+        from zoneinfo import ZoneInfo
+        _tz = ZoneInfo("America/Chicago")
+    except Exception:
+        from datetime import timezone, timedelta
+        _tz = timezone(timedelta(hours=-5))
+    from datetime import datetime as _dt
+    out.attrs["fetched_at"] = _dt.now(_tz).strftime("%b %d, %Y • %I:%M %p %Z")
+    return out
 
-@st.cache_data(ttl=86400, show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_chart_data(ticker_sym, period="1y"):
+    stock = yf.Ticker(ticker_sym)
+    hist = stock.history(period=period)
+    if hist.empty:
+        # Raise so the empty result is NOT cached.
+        raise ValueError(f"No price history returned for {ticker_sym}")
+    return hist
+
 def get_chart_data(ticker_sym, period="1y"):
     try:
-        stock = yf.Ticker(ticker_sym)
-        hist = stock.history(period=period)
-        if not hist.empty:
-            return hist
+        return _load_chart_data(ticker_sym, period)
     except Exception:
-        pass
-    return pd.DataFrame()
+        return pd.DataFrame()
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_insider_data(ticker_sym):
@@ -286,8 +299,8 @@ def calculate_fundamental_score(info):
         
     return score, flags
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def get_pelosi_trades():
+@st.cache_data(ttl=21600, show_spinner=False)
+def _load_pelosi_trades():
     try:
         # Pulling 2026 data directly from the raw GitHub parquet file (never gets blocked by Cloudflare/WAF)
         url = "https://raw.githubusercontent.com/kovagent/congresskit/main/data/year=2026/congress-2026.parquet"
@@ -321,12 +334,26 @@ def get_pelosi_trades():
         
         final = pelosi[['Ticker', 'Action', 'Date Traded', 'Size']].sort_values(by='Date Traded', ascending=False)
         return final
-    except Exception as e:
+    except Exception:
+        # Re-raise so st.cache_data does NOT cache the failure; the wrapper below handles it.
+        raise
+
+def get_pelosi_trades():
+    try:
+        return _load_pelosi_trades()
+    except Exception:
         return pd.DataFrame()
 
 # Run the screener (will use cache unless refreshed)
 with st.spinner("Running Live Market Screener..."):
     df = run_screener(WATCHLIST)
+
+# If any ticker failed to fetch, don't keep the failed result in cache -
+# evict it so the next rerun (auto-refresh or interaction) retries.
+_failed_tickers = df.loc[df["List"] == "ERROR"].shape[0]
+if _failed_tickers:
+    run_screener.clear()
+    st.warning(f"⚠️ Could not fetch live data for {_failed_tickers} of {len(df)} tickers (Yahoo Finance may be rate-limiting). Will retry on the next refresh.")
 
 # Track last refresh timestamp in US Central Time
 from datetime import datetime
@@ -337,8 +364,10 @@ except Exception:
     from datetime import timezone, timedelta
     central_tz = timezone(timedelta(hours=-5))
 
-if "last_refreshed" not in st.session_state:
-    st.session_state["last_refreshed"] = datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
+# Show when the data was actually fetched (not when the session started)
+st.session_state["last_refreshed"] = df.attrs.get(
+    "fetched_at", datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
+)
 
 # Creator badge + Last refreshed strip
 st.markdown(f"""

@@ -1,7 +1,7 @@
-﻿streamlit
+streamlit
 pandas
 numpy
-yfinance>=1.7.0
+yfinance>=0.2.40
 plotly
 beautifulsoup4
 requests

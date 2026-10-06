@@ -689,7 +689,7 @@ tab1, tab_screen, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
 ])
 
 with tab1:
-    main_col, side_col = st.columns([2.5, 1.5])
+    main_col, side_col = st.columns([3.4, 1])
     with main_col:
             if "Composite" in df.columns:
                 with st.expander("ℹ️ Column legend — what these scores mean", expanded=False):

@@ -36,8 +36,22 @@ class FinancialDataProvider:
             info = {}
 
         try:
-            stock = yf.Ticker(ticker_sym)
-            hist = stock.history(period=period)
+            # yfinance's history() is currently broken (Yahoo quoteSummary 401 /
+            # crumb handshake KeyError 'A3'); use the auth-free v8 chart endpoint.
+            import requests as _req
+            url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_sym}"
+                   f"?range={period}&interval=1d")
+            resp = _req.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+            resp.raise_for_status()
+            res = (resp.json().get("chart") or {}).get("result") or []
+            if res:
+                r0 = res[0]
+                ts = r0.get("timestamp") or []
+                q = (r0.get("indicators", {}).get("quote") or [{}])[0]
+                hist = pd.DataFrame({
+                    "Open": q.get("open"), "High": q.get("high"), "Low": q.get("low"),
+                    "Close": q.get("close"), "Volume": q.get("volume"),
+                }, index=pd.to_datetime(ts, unit="s") if ts else None).dropna(subset=["Close"])
         except Exception:
             hist = pd.DataFrame()
 

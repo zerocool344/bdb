@@ -8,6 +8,72 @@ from plotly.subplots import make_subplots
 import requests
 from bs4 import BeautifulSoup
 
+# ── Resilient Yahoo fetch layer ──────────────────────────────────────────────
+# Yahoo's quoteSummary / quote endpoints now return 401 without a crumb, and
+# yfinance 1.7.0's crumb handshake is broken (KeyError 'A3'). The v8 chart
+# endpoint still serves price + metadata without auth, so we use it directly.
+_YF_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+
+def _yf_chart(ticker_sym, range_="5d", interval="1d"):
+    """Raw v8 chart result for a ticker; raises on any failure."""
+    url = (
+        f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_sym}"
+        f"?range={range_}&interval={interval}"
+    )
+    resp = requests.get(url, headers=_YF_HEADERS, timeout=20)
+    resp.raise_for_status()
+    payload = resp.json()
+    result = (payload.get("chart") or {}).get("result") or []
+    if not result:
+        err = ((payload.get("chart") or {}).get("error") or {}).get("description", "no data")
+        raise ValueError(f"{ticker_sym}: {err}")
+    return result[0]
+
+
+def _chart_to_history(result):
+    """Convert a v8 chart result to a yfinance-style OHLCV DataFrame."""
+    ts = result.get("timestamp") or []
+    quote = (result.get("indicators", {}).get("quote") or [{}])[0]
+    adj = (result.get("indicators", {}).get("adjclose") or [{}])[0].get("adjclose")
+    df = pd.DataFrame(
+        {
+            "Open": quote.get("open"),
+            "High": quote.get("high"),
+            "Low": quote.get("low"),
+            "Close": quote.get("close"),
+            "Volume": quote.get("volume"),
+        },
+        index=pd.to_datetime(ts, unit="s", utc=True).tz_convert("America/New_York").tz_localize(None)
+        if ts
+        else None,
+    )
+    df["Adj Close"] = adj if adj else df["Close"]
+    return df.dropna(subset=["Close"])
+
+
+def get_quote_snapshot(ticker_sym):
+    """Live price + name from the auth-free chart endpoint. Raises on failure."""
+    meta = _yf_chart(ticker_sym, range_="5d", interval="1d").get("meta", {})
+    price = meta.get("regularMarketPrice")
+    if price is None:
+        raise ValueError(f"{ticker_sym}: no market price in response")
+    return {
+        "price": price,
+        "name": meta.get("shortName") or meta.get("longName") or ticker_sym,
+        "currency": meta.get("currency", "USD"),
+        "previous_close": meta.get("chartPreviousClose"),
+    }
+
+
+def get_fundamentals(ticker_sym):
+    """Analyst target / consensus / valuation via yfinance; {} when Yahoo 401s."""
+    try:
+        info = yf.Ticker(ticker_sym).info or {}
+        return info if isinstance(info, dict) else {}
+    except Exception:
+        return {}
+
 # TauricResearch/TradingAgents multi-agent financial framework integration
 from tradingagents import TradingAgentsGraph, DEFAULT_CONFIG
 from tradingagents.ui import render_tradingagents_desk, create_radar_chart
@@ -155,15 +221,17 @@ with col_actions:
 @st.cache_data(ttl=595, show_spinner=False)
 def run_screener(watchlist):
     results = []
-    
+
     for i, ticker_sym in enumerate(watchlist):
         try:
-            stock = yf.Ticker(ticker_sym)
-            info = stock.info
-            
-            # Fetch data fields
-            name = info.get("shortName", ticker_sym)
-            current_price = info.get("currentPrice")
+            # Live price + name from the auth-free chart endpoint (always works).
+            snap = get_quote_snapshot(ticker_sym)
+            name = snap["name"]
+            current_price = snap["price"]
+
+            # Fundamentals: analyst target / consensus / valuation. Yahoo's
+            # quoteSummary is currently 401-gated, so this may come back empty.
+            info = get_fundamentals(ticker_sym)
             target_price = info.get("targetMeanPrice")
             rec_key = info.get("recommendationKey", "N/A")
             
@@ -193,7 +261,8 @@ def run_screener(watchlist):
 
             # Determine List Placement (NEAR vs FAR vs NEUTRAL)
             # FAR = High upside (e.g. > 25%), NEAR = Moderate upside (e.g. 10-25%)
-            # This is a dynamic rule set based on upside.
+            # This is a dynamic rule set based on upside. When analyst targets
+            # are unavailable (Yahoo 401), classify on live price action instead.
             list_placement = "NEUTRAL"
             if upside is not None:
                 if upside > 25.0:
@@ -202,6 +271,11 @@ def run_screener(watchlist):
                     list_placement = "NEAR (Growth/Value)"
                 else:
                     list_placement = "WATCH (Low Upside)"
+            else:
+                prev_close = snap.get("previous_close")
+                if prev_close and current_price and prev_close > 0:
+                    day_move = ((current_price - prev_close) / prev_close) * 100
+                    list_placement = "WATCH (Low Upside)" if day_move >= 0 else "NEAR (Growth/Value)"
                     
             results.append({
                 "Ticker": ticker_sym,
@@ -212,7 +286,11 @@ def run_screener(watchlist):
                 "Consensus": consensus,
                 "Upside %": upside if upside is not None else 0.0,
                 "True P/E": true_pe if true_pe is not None else "N/A",
-                "Thesis": f"Dynamic rating: {consensus}. Target: {target_price}",
+                "Thesis": (
+                    f"Dynamic rating: {consensus}. Target: {target_price}"
+                    if target_price
+                    else "Live price from Yahoo. Analyst targets temporarily unavailable."
+                ),
                 "Risk": "Market volatility, execution risk."
             })
             
@@ -247,8 +325,8 @@ def run_screener(watchlist):
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _load_chart_data(ticker_sym, period="1y"):
-    stock = yf.Ticker(ticker_sym)
-    hist = stock.history(period=period)
+    result = _yf_chart(ticker_sym, range_=period, interval="1d")
+    hist = _chart_to_history(result)
     if hist.empty:
         # Raise so the empty result is NOT cached.
         raise ValueError(f"No price history returned for {ticker_sym}")
@@ -265,7 +343,7 @@ def get_insider_data(ticker_sym):
     result = {"insider": pd.DataFrame()}
     try:
         stock = yf.Ticker(ticker_sym)
-        # Fetch Insider Transactions
+        # Fetch Insider Transactions (best-effort; Yahoo quoteSummary is 401-gated)
         insider = stock.insider_transactions
         if insider is not None and not insider.empty:
             result["insider"] = insider.head(10) # Top 10 recent
@@ -552,10 +630,11 @@ with tab5:
             fetch_period = period_options[st.session_state.etf_period]
             
             for t in tickers:
-                hist = yf.Ticker(t).history(period=fetch_period)
+                hist = get_chart_data(t, period=fetch_period)
                 if not hist.empty:
                     # Normalize to percentage return
                     first_close = hist['Close'].iloc[0]
+                    hist = hist.copy()
                     hist['Return'] = ((hist['Close'] - first_close) / first_close) * 100
                     data_dict[t] = hist
                     

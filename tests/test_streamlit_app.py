@@ -24,20 +24,19 @@ def test_app_ast_syntax():
     assert isinstance(parsed, ast.AST)
 
 
-def test_all_seven_tabs_defined_in_app():
-    """Verify that app.py defines all 7 required tabs including TradingAgents Desk."""
+def test_all_tabs_defined_in_app():
+    """Verify that app.py defines the required tabs including Screener and AI Desk."""
     app_path = os.path.join(os.path.dirname(__file__), "..", "app.py")
     with open(app_path, "r", encoding="utf-8") as f:
         source = f.read()
 
     expected_tab_strings = [
-        "Live Overview (Consensus)",
-        "🤖 TradingAgents Desk",
-        "Interactive Stock Insights",
-        "🧬 Deep Insights",
-        "🇺🇸 Pelosi Tracker",
-        "📈 ETF Benchmarks",
-        "📚 Master Lists"
+        "📊 Overview",
+        "🎯 Screener",
+        "🧬 AI Desk",
+        "🇺🇸 Pelosi",
+        "📈 ETFs",
+        "📚 Resources"
     ]
 
     for tab_str in expected_tab_strings:
@@ -81,7 +80,6 @@ def test_1click_launch_mechanisms_in_app():
         source = f.read()
 
     assert 'st.session_state["selected_ta_ticker"]' in source
-    assert "btn_quick_launch_tab1" in source
     assert "btn_ta_tab2_" in source
 
 

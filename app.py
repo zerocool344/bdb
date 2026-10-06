@@ -74,6 +74,70 @@ def get_fundamentals(ticker_sym):
     except Exception:
         return {}
 
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_price_history(ticker_sym, range_="1y"):
+    """1y OHLCV history for factor computation; empty DataFrame on failure."""
+    try:
+        hist = _chart_to_history(_yf_chart(ticker_sym, range_=range_, interval="1d"))
+        return hist
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_sp500_universe():
+    """S&P 500 tickers from Wikipedia (Yahoo needs '-' instead of '.')."""
+    from io import StringIO
+    try:
+        html = requests.get(
+            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+            headers=_YF_HEADERS, timeout=20).text
+        df = pd.read_html(StringIO(html))[0]
+        col = "Symbol" if "Symbol" in df.columns else df.columns[0]
+        return sorted({str(s).strip().replace(".", "-") for s in df[col] if str(s).strip()})
+    except Exception:
+        return []
+
+
+def _finnhub(ticker_sym, endpoint, api_key):
+    url = f"https://finnhub.io/api/v1{endpoint}?symbol={ticker_sym}&token={api_key}"
+    resp = requests.get(url, headers=_YF_HEADERS, timeout=15)
+    if resp.status_code != 200:
+        return {}
+    return resp.json()
+
+
+def get_finnhub_fundamentals(ticker_sym, api_key):
+    """Analyst target, consensus, P/E, ROE from Finnhub free tier; {} without a key."""
+    if not api_key:
+        return {}
+    try:
+        target = _finnhub(ticker_sym, "/stock/price-target", api_key)
+        recs = _finnhub(ticker_sym, "/stock/recommendation", api_key)
+        metric = _finnhub(ticker_sym, "/stock/metric", api_key).get("metric", {})
+        rec0 = (recs[0] if isinstance(recs, list) and recs else {})
+        return {
+            "targetMeanPrice": target.get("targetMean"),
+            "trailingPE": metric.get("peTTM") or metric.get("peNormalizedAnnual"),
+            "roeTTM": metric.get("roeTTM") or metric.get("roeRfy"),
+            "recommendationKey": _consensus_from_recs(rec0),
+        }
+    except Exception:
+        return {}
+
+
+def _consensus_from_recs(rec0):
+    if not rec0:
+        return "N/A"
+    buy = rec0.get("buy", 0) + rec0.get("strongBuy", 0)
+    sell = rec0.get("sell", 0) + rec0.get("strongSell", 0)
+    if buy > sell and buy >= rec0.get("hold", 0):
+        return "Buy"
+    if sell > buy:
+        return "Sell"
+    return "Hold"
+
 # TauricResearch/TradingAgents multi-agent financial framework integration
 from tradingagents import TradingAgentsGraph, DEFAULT_CONFIG
 from tradingagents.ui import render_tradingagents_desk, create_radar_chart
@@ -216,6 +280,138 @@ with col_actions:
             st.session_state["last_refreshed"] = datetime.now(central_tz).strftime("%b %d, %Y • %I:%M %p %Z")
             st.cache_data.clear()
             st.rerun()
+
+
+# ── Composite factor scoring engine ─────────────────────────────────────────
+# Ranks a universe cross-sectionally on Value / Quality / Momentum / Low-Vol.
+# Price-derived factors (momentum, volatility, trend) always work off the
+# auth-free chart API. Value & Quality come from Finnhub when a key is given.
+
+
+def _pct_rank(series):
+    """Percentile rank in [0,1]; NaN stays NaN so a missing factor is renormalized out."""
+    return series.rank(pct=True)
+
+
+def _compute_price_factors(hist):
+    """Momentum / volatility / trend from an OHLCV history DataFrame."""
+    close = hist["Close"].astype(float).dropna()
+    n = len(close)
+    if n < 30:
+        return None
+    last = float(close.iloc[-1])
+
+    def ago(days):
+        return float(close.iloc[-1 - days]) if n > days else float(close.iloc[0])
+
+    # Classic 6-1 & 12-1 momentum: skip the most recent (mean-reverting) month.
+    px_1m, px_6m, px_12m = ago(21), ago(126), ago(252)
+    mom_6_1 = (px_1m - px_6m) / px_6m if px_6m else None
+    mom_12_1 = (px_1m - px_12m) / px_12m if px_12m else None
+
+    rets = close.pct_change().dropna()
+    vol = float(rets.tail(126).std() * (252 ** 0.5)) if len(rets) > 10 else None
+    sma200 = float(close.tail(min(200, n)).mean())
+    above_200 = 1.0 if last >= sma200 else 0.0
+
+    out = {"price": last, "mom_6_1": mom_6_1, "mom_12_1": mom_12_1,
+           "volatility": vol, "above_200d": above_200}
+    return out if (mom_6_1 is not None or mom_12_1 is not None) else None
+
+
+def build_composite_scores(rows, has_fundamentals):
+    """rows: list of per-ticker dicts. Returns a ranked DataFrame."""
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    df["momentum_raw"] = df[["mom_6_1", "mom_12_1"]].mean(axis=1, skipna=True)
+    df["Momentum"] = _pct_rank(df["momentum_raw"]) * 100
+    df["LowVol"] = (1 - _pct_rank(df["volatility"])) * 100
+    df["Trend"] = df["above_200d"] * 100
+
+    if has_fundamentals and "value_raw" in df and df["value_raw"].notna().any():
+        df["Value"] = _pct_rank(df["value_raw"]) * 100
+        df["Quality"] = _pct_rank(df["quality_raw"]) * 100
+        # Value 30 / Quality 30 / Momentum 25 / Low-Vol 10 / Trend 5
+        weights = {"Value": 0.30, "Quality": 0.30, "Momentum": 0.25, "LowVol": 0.10, "Trend": 0.05}
+    else:
+        df["Value"] = pd.NA
+        df["Quality"] = pd.NA
+        # No fundamentals: momentum 55 / low-vol 30 / trend 15
+        weights = {"Momentum": 0.55, "LowVol": 0.30, "Trend": 0.15}
+
+    def combine(r):
+        acc, wsum = 0.0, 0.0
+        for k, w in weights.items():
+            v = r[k]
+            if pd.notna(v):
+                acc += v * w
+                wsum += w
+        if not wsum:
+            return None
+        score = acc / wsum  # renormalize over present factors
+        # Trend gate: don't let momentum chase names below their 200-day line.
+        if r.get("above_200d") == 0.0:
+            score *= 0.85
+        return round(score, 1)
+
+    df["Composite"] = df.apply(combine, axis=1)
+    df["Rank"] = df["Composite"].rank(ascending=False, method="min").astype("Int64")
+
+    n = len(df)
+    top, next_ = max(1, round(n * 0.10)), max(2, round(n * 0.30))
+
+    def tier(rk):
+        if pd.isna(rk):
+            return "WATCH"
+        if rk <= top:
+            return "STRONG (Top 10%)"
+        if rk <= next_:
+            return "NEAR (Top 30%)"
+        return "WATCH"
+
+    df["List"] = df["Rank"].apply(tier)
+    return df.sort_values("Composite", ascending=False).reset_index(drop=True)
+
+
+@st.cache_data(ttl=595, show_spinner=False)
+def run_composite_screener(universe, finnhub_key=""):
+    """Score & rank a universe. Returns (ranked_df, fetched_at_str, fundamentals_on)."""
+    rows = []
+    for ticker_sym in universe:
+        try:
+            snap = get_quote_snapshot(ticker_sym)
+            hist = get_price_history(ticker_sym, "1y")
+            if hist.empty:
+                continue
+            pf = _compute_price_factors(hist)
+            if not pf:
+                continue
+            row = {"Ticker": ticker_sym, "Name": snap["name"], **pf}
+
+            fund = get_finnhub_fundamentals(ticker_sym, finnhub_key)
+            pe = fund.get("trailingPE")
+            row["value_raw"] = (1.0 / pe) if (isinstance(pe, (int, float)) and pe > 0) else None
+            roe = fund.get("roeTTM")
+            row["quality_raw"] = roe if isinstance(roe, (int, float)) else None
+            row["Target"] = fund.get("targetMeanPrice")
+            row["Consensus"] = fund.get("recommendationKey", "N/A")
+            rows.append(row)
+        except Exception:
+            continue
+
+    has_fund = bool(finnhub_key) and any(r.get("value_raw") is not None for r in rows)
+    ranked = build_composite_scores(rows, has_fund)
+
+    from datetime import datetime as _dt
+    try:
+        from zoneinfo import ZoneInfo
+        _tz = ZoneInfo("America/Chicago")
+    except Exception:
+        from datetime import timezone, timedelta
+        _tz = timezone(timedelta(hours=-5))
+    return ranked, _dt.now(_tz).strftime("%b %d, %Y • %I:%M %p %Z"), has_fund
 
 
 @st.cache_data(ttl=595, show_spinner=False)
@@ -465,8 +661,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Tabs
-tab1, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
+tab1, tab_screen, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
     "📊 Overview",
+    "🎯 Screener",
     "🧬 AI Desk",
     "🇺🇸 Pelosi",
     "📈 ETFs",
@@ -598,8 +795,75 @@ with tab1:
                         # 1-Click Multi-Agent Deliberation Launch
                         if st.button(f"🤖 Launch Multi-Agent Committee for {ticker}", key=f"btn_ta_tab2_{ticker}", use_container_width=True):
                             st.session_state["selected_ta_ticker"] = ticker
-                            st.info(f"✅ Queued **{ticker}**! Switch to Tab 2 ('🤖 TradingAgents Desk') to view the AI Committee deliberation.")
-        
+                            st.info(f"✅ Queued **{ticker}**! Switch to the '🧬 AI Desk' tab to view the AI Committee deliberation.")
+
+with tab_screen:
+    st.subheader("🎯 Multi-Factor Stock Screener")
+    st.markdown(
+        "Ranks the universe on a **composite of Value, Quality, Momentum, Trend & Low-Volatility** "
+        "instead of a single analyst-target signal. Cross-sectional percentile ranks adapt to market conditions."
+    )
+
+    ctrl1, ctrl2, ctrl3 = st.columns([1.4, 1, 1.6])
+    with ctrl1:
+        universe_choice = st.radio(
+            "Universe",
+            ["My Watchlist", "S&P 500"],
+            horizontal=True,
+            help="S&P 500 fetches ~500 tickers; first run takes a few minutes then caches."
+        )
+    with ctrl2:
+        top_n = st.slider("Show top N", 10, 100, 25, 5)
+    with ctrl3:
+        finnhub_key = st.text_input(
+            "Finnhub API Key (optional — unlocks Value & Quality factors)",
+            type="password",
+            help="Free key at finnhub.io. Without it the screener ranks on price momentum / trend / low-vol only."
+        )
+
+    universe = WATCHLIST if universe_choice == "My Watchlist" else get_sp500_universe()
+    if not universe:
+        st.error("Could not load the S&P 500 universe. Check connectivity.")
+    else:
+        if "composite_cache" not in st.session_state:
+            st.session_state["composite_cache"] = {}
+
+        run_scan = st.button("🚀 Run Factor Scan", type="primary", use_container_width=True)
+        if run_scan:
+            with st.spinner(f"Scoring {len(universe)} tickers across factors..."):
+                _ranked, _fetched, _has_fund = run_composite_screener(tuple(universe), finnhub_key.strip())
+                st.session_state["composite_cache"] = {
+                    "ranked": _ranked, "fetched": _fetched,
+                    "has_fund": _has_fund, "universe": universe_choice,
+                }
+
+        cache = st.session_state["composite_cache"]
+        if not cache:
+            st.info("👆 Click **Run Factor Scan** to rank the universe.")
+        else:
+            ranked, has_fund = cache["ranked"], cache["has_fund"]
+            st.caption(
+                f"Scored {len(ranked)} tickers • {cache['universe']} • refreshed {cache['fetched']} • "
+                + ("Value & Quality factors: **on** (Finnhub)" if has_fund else "Value & Quality factors: **off** — add a Finnhub key"))
+            if ranked.empty:
+                st.warning("No tickers returned enough data to score.")
+            else:
+                show = ranked.head(top_n)
+                disp_cols = ["Rank", "Ticker", "Name", "price", "Composite", "Momentum", "LowVol", "Trend"]
+                if has_fund:
+                    disp_cols += ["Value", "Quality"]
+                disp = show.reindex(columns=[c for c in disp_cols if c in show.columns]).copy()
+                disp = disp.rename(columns={"price": "Price", "mom_6_1": "6-1 Mo Mom", "mom_12_1": "12-1 Mo Mom"})
+                if "Price" in disp:
+                    disp["Price"] = disp["Price"].map(lambda v: f"${v:,.2f}" if pd.notna(v) else "N/A")
+                for c in ["Composite", "Momentum", "LowVol", "Trend", "Value", "Quality"]:
+                    if c in disp:
+                        disp[c] = disp[c].map(lambda v: round(float(v), 1) if pd.notna(v) else "—")
+                st.dataframe(disp, use_container_width=True, hide_index=True)
+
+                with st.expander("📋 Full ranked list"):
+                    st.dataframe(ranked, use_container_width=True, hide_index=True)
+
 with tab_tradingagents:
     render_tradingagents_desk(WATCHLIST)
 

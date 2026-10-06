@@ -629,6 +629,24 @@ if _failed_tickers:
     run_screener.clear()
     st.warning(f"⚠️ Could not fetch live data for {_failed_tickers} of {len(df)} tickers (Yahoo Finance may be rate-limiting). Will retry on the next refresh.")
 
+# Enrich the overview with multi-factor composite scores (shares the 🎯 Screener's
+# cache, so the "My Watchlist" scan is computed at most once per cache window).
+_fetched_at = df.attrs.get("fetched_at")
+try:
+    _comp_df, _, _ = run_composite_screener(
+        tuple(WATCHLIST),
+        (st.session_state.get("finnhub_key_input") or "").strip())
+    if not _comp_df.empty and "Ticker" in _comp_df.columns:
+        df = df.merge(
+            _comp_df[["Ticker", "Composite", "Rank", "Momentum", "LowVol", "Trend"]],
+            on="Ticker", how="left")
+except Exception:
+    pass
+if _fetched_at:
+    df.attrs["fetched_at"] = _fetched_at
+
+_sort_col = "Composite" if "Composite" in df.columns else "Upside %"
+
 # Track last refresh timestamp in US Central Time
 from datetime import datetime
 try:
@@ -673,16 +691,18 @@ tab1, tab_screen, tab_tradingagents, tab4, tab5, tab6 = st.tabs([
 with tab1:
     main_col, side_col = st.columns([2.5, 1.5])
     with main_col:
+            if "Composite" in df.columns:
+                st.caption("Sorted by **Composite** — a 0–100 multi-factor score (momentum, trend, low-vol; plus Value & Quality when a Finnhub key is added on the 🎯 Screener tab). See the 🎯 Screener for the full ranked model.")
             st.subheader("NEAR | 1–2 Year Consensus (10% - 25% Upside)")
-            near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            near_df = df[df['List'] == 'NEAR (Growth/Value)'].drop(columns=['List']).sort_values(_sort_col, ascending=False).reset_index(drop=True)
             st.dataframe(near_df, use_container_width=True)
         
             st.subheader("FAR | 2–5 Year Deep Value (>25% Upside)")
-            far_df = df[df['List'] == 'FAR (Deep Value)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            far_df = df[df['List'] == 'FAR (Deep Value)'].drop(columns=['List']).sort_values(_sort_col, ascending=False).reset_index(drop=True)
             st.dataframe(far_df, use_container_width=True)
             
             st.subheader("WATCH | Low Upside / Overvalued (<10% Upside)")
-            watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values('Upside %', ascending=False).reset_index(drop=True)
+            watch_df = df[df['List'] == 'WATCH (Low Upside)'].drop(columns=['List']).sort_values(_sort_col, ascending=False).reset_index(drop=True)
             st.dataframe(watch_df, use_container_width=True)
             
             error_df = df[df['List'] == 'ERROR'].drop(columns=['List']).reset_index(drop=True)
@@ -729,6 +749,8 @@ with tab1:
                         c4.metric(label="Target Upside", value=f"{row['Upside %']}%" if row['Upside %'] != 0.0 else "N/A")
                         
                         st.markdown(f"**List Classification:** {row['List']}")
+                        if 'Composite' in row.index and pd.notna(row['Composite']):
+                            st.markdown(f"**Composite Score:** {row['Composite']:.0f} / 100  •  **Rank:** {row['Rank']}")
                         st.markdown(f"**Dynamic Thesis:** {row['Thesis']}")
                         st.markdown(f"**Risk:** {row['Risk']}")
                         
@@ -818,6 +840,7 @@ with tab_screen:
         finnhub_key = st.text_input(
             "Finnhub API Key (optional — unlocks Value & Quality factors)",
             type="password",
+            key="finnhub_key_input",
             help="Free key at finnhub.io. Without it the screener ranks on price momentum / trend / low-vol only."
         )
 
